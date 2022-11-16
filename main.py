@@ -66,7 +66,6 @@ class Blockchain:
         for loop_index in range(num_of_previous_block):
             latest_block_timestamps.append(self.latest_nth_block(loop_index).timestamp)
         current_block_timestamp = block.timestamp
-
         return
 
 if __name__ == "__main__":
