@@ -87,5 +87,12 @@ class Blockchain:
              
             return self.difficulty
 
+class Transaction:
+    def __init__(self, sender, receiver, amounts, message):
+        self.sender = sender
+        self.receiver = receiver
+        self.amounts = amounts
+        self.message = message        
+
 if __name__ == "__main__":
     Blockchain() 
