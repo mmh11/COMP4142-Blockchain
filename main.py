@@ -35,7 +35,40 @@ class Blockchain:
         return(Block(0, time.time(), ["COMP4142 Group Project"], 1, 5, "0", "0"))
 
     def lastest_block(self):
-        return(self.chain[len(self.chain)-1])
+        return(self.latest_nth_block(1))
+    
+    def latest_nth_block(self, nth: int):
+        return(self.chain[len(self.chain)-nth])
 
-    def proof_of_work():
+    def proof_of_work(self, block: Block):
+        block.nonce = 1
+        computed_hash = block.hash_sha256()
+        while not computed_hash.startswith('0' * block.difficulty):
+            block.nonce += 1
+            computed_hash = block.hash_sha256()
+        return computed_hash
+
+    def add_block(self, block: Block, proof):
+        previous_hash = self.lastest_block().current_hash
+        if previous_hash != block.previous_hash:
+            return False
+        if not self.is_valid_proof(block, proof):
+            return False
+        block.current_hash = proof
+        self.chain.append(block)
+        return True
+ 
+    def is_valid_proof(self, block: Block, block_hash: str):
+        return (block_hash.startswith('0' * block.difficulty) and block_hash == block.hash_sha256())
+    
+    def adjust_current_block_difficulty(self, block: Block, num_of_previous_block: int):
+        latest_block_timestamps = []
+        for loop_index in range(num_of_previous_block):
+            latest_block_timestamps.append(self.latest_nth_block(loop_index).timestamp)
+        current_block_timestamp = block.timestamp
+
         return
+
+if __name__ == "__main__":
+    Blockchain() 
+    
