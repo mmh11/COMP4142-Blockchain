@@ -21,7 +21,7 @@ class Block:
         self.merkle_root = merkle_root
         self.previous_hash = previous_hash
         self.current_hash = self.hash_sha256()
-        self.data = transaction
+        self.data = transactions
 
     def hash_sha256(self):
         hash_data = json.dumps(self.__dict__)
