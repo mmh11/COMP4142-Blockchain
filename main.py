@@ -84,7 +84,7 @@ class Blockchain:
             else:
                 print(f"Average block time:{average_time_consumed}s. High up the difficulty")
                 self.difficulty += 1
-            
+             
             return self.difficulty
 
 if __name__ == "__main__":
