@@ -13,15 +13,15 @@ Reference List:
 
 # Blockchain prototype - The basic content
 class Block:
-    def __init__(self, index, timestamp, transactions, nonce, difficulty, merkle_root, previous_hash = ''):
+    def __init__(self, index, timestamp, nonce, difficulty, merkle_root, previous_hash, transactions = ''):
         self.index = index
         self.timestamp = timestamp
-        self.transactions = transactions
         self.nonce = nonce
         self.difficulty = difficulty
         self.merkle_root = merkle_root
         self.previous_hash = previous_hash
         self.current_hash = self.hash_sha256()
+        self.data = transaction
 
     def hash_sha256(self):
         hash_data = json.dumps(self.__dict__)
