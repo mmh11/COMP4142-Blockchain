@@ -10,19 +10,27 @@ Reference List:
 [3] https://ithelp.ithome.com.tw/users/20119982/ironman/2255?page=1 <- more comprehensive tutorial, recommend refer this pls.
 """
 
-
 # Blockchain prototype - The basic content
+
+class Transaction:
+    def __init__(self, sender, receiver, amounts):
+        self.sender = sender
+        self.receiver = receiver
+        self.amounts = amounts
+
 class Block:
 
-  def __init__(self, index, difficulty, merkle_root, previous_hash = '', transactions = []):
-    self.index = index
+  def __init__(self,
+               difficulty,
+               previous_hash=''):
+    self.index = 0
     self.timestamp = int(time.time())
-    self.nonce = nonce
+    self.nonce = 0
     self.difficulty = difficulty
-    self.merkle_root = merkle_root
+    self.merkle_root = ''
     self.previous_hash = previous_hash
     self.current_hash = self.hash_sha256()
-    self.transaction = transactions
+    self.transaction = []
 
   def __str__(self):
     return str(self.__class__) + ": " + str(self.__dict__)
@@ -35,7 +43,7 @@ class Block:
 class Blockchain:
 
   def __init__(self):
-    self.chain = [self.generate_genesis_block()]
+    self.chain = []
     self.adjust_difficulty_blocks = 20
     self.difficulty = 1
     self.block_time = 30
@@ -46,15 +54,65 @@ class Blockchain:
   def __str__(self):
     return str(self.__class__) + ": " + str(self.__dict__)
 
-  def generate_genesis_block(self):
-    return (Block(0, 1, 5, "0", "0", ["COMP4142 Group Project"]))
+  def create_genesis_block(self):
+    genesis = Block(self.difficulty, ["COMP4142 Group Project"])
+    #hash genesis?
+    self.chain.append(genesis)
 
+  def hash_sha256(self):
+    hash_data = json.dumps(self.__dict__)
+    return sha256(hash_data.encode()).hexdigest()
+  
+  def transaction_to_string(self, transaction):
+        transaction_dict = {
+            'sender': str(transaction.sender),
+            'receiver': str(transaction.receiver),
+            'amounts': transaction.amounts,
+        }
+        return str(transaction_dict)
+
+  def get_transactions_string(self, block):
+        transaction_str = ''
+        for transaction in block.transactions:
+            transaction_str += self.transaction_to_string(transaction)
+        return transaction_str
+
+  def add_transaction_to_block(self, block):
+        if len(self.pending_transactions) > self.block_limitation:
+            transcation_accepted = self.pending_transactions[:self.block_limitation]
+            self.pending_transactions = self.pending_transactions[self.block_limitation:]
+        else:
+            transcation_accepted = self.pending_transactions
+            self.pending_transactions = []
+        block.transactions = transcation_accepted
+  
   def lastest_block(self):
     return (self.latest_nth_block(1))
 
   def latest_nth_block(self, nth: int):
     return (self.chain[len(self.chain) - nth])
 
+  def mine_block(self):
+        start = time.process_time()
+        last_block = self.lastest_block()
+        new_block = Block(last_block.current_hash, self.difficulty)
+
+        self.add_transaction_to_block(new_block)
+        new_block.index = last_block.index + 1
+        new_block.previous_hash = last_block.current_hash
+        new_block.difficulty = self.difficulty
+        new_block.current_hash = new_block.hash_sha256()
+        while new_block.current_hash[0: self.difficulty] != '0' * self.difficulty:
+            new_block.nonce += 1
+            new_block.current_hash = new_block.hash_sha256()
+            
+            
+
+        time_consumed = round(time.process_time() - start, 5)
+        print(f"Hash found: {new_block.current_hash} @ difficulty {self.difficulty}, time cost: {time_consumed}s")
+        self.chain.append(new_block)
+
+  
   def proof_of_work(self, block: Block):
     block.nonce = 1
     computed_hash = block.hash_sha256()
@@ -103,4 +161,6 @@ class Blockchain:
 
 if __name__ == "__main__":
   b = Blockchain()
-  print(b)
+  b.create_genesis_block()
+  b.mine_block()
+  print(b.chain[1])
