@@ -46,7 +46,7 @@ class BlockChain:
 
         # For P2P connection
         self.socket_host = "127.0.0.1"
-        self.socket_port = int(sys.argv[1])
+        self.socket_port = 1111
         self.node_address = {f"{self.socket_host}:{self.socket_port}"}
         self.connection_nodes = {}
         if len(sys.argv) == 3:
@@ -135,6 +135,7 @@ class BlockChain:
         self.chain.append(new_block)
 
     def adjust_difficulty(self):
+        "please update by lecture slides adjust difficulties algorithm"
         if len(self.chain) % self.adjust_difficulty_blocks != 1:
             return self.difficulty
         elif len(self.chain) <= self.adjust_difficulty_blocks:
