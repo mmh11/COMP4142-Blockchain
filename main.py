@@ -14,9 +14,9 @@ Reference List:
 # Blockchain prototype - The basic content
 class Block:
 
-  def __init__(self, index, timestamp, nonce, difficulty, merkle_root, previous_hash = '', transactions = []):
+  def __init__(self, index, difficulty, merkle_root, previous_hash = '', transactions = []):
     self.index = index
-    self.timestamp = timestamp
+    self.timestamp = int(time.time())
     self.nonce = nonce
     self.difficulty = difficulty
     self.merkle_root = merkle_root
@@ -47,7 +47,7 @@ class Blockchain:
     return str(self.__class__) + ": " + str(self.__dict__)
 
   def generate_genesis_block(self):
-    return (Block(0, time.time(), ["COMP4142 Group Project"], 1, 5, "0", "0"))
+    return (Block(0, 1, 5, "0", "0", ["COMP4142 Group Project"]))
 
   def lastest_block(self):
     return (self.latest_nth_block(1))
