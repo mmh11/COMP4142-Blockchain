@@ -44,6 +44,10 @@ except Exception:
 
 # Storage - Raw Data
 collection_RawData = database["rawdata"] # access to the "rawdata" collection on mongodb
+def insert_collection_RawData(rawData):
+    collection_RawData.insert_many(rawData)
 
-def insert_collection_RawData(rawdata):
-    collection_RawData.insert_many(rawdata)
+# Storage - Transactions (UTXO)
+collection_transactionPool = database["transactionPool"]
+def insert_collection_transactionPool(transactionsData):
+    collection_transactionPool.insert_many(transactionsData)
