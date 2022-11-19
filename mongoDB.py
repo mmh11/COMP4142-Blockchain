@@ -15,30 +15,13 @@ User Name: dbAdmin
 User Password: ****(Ask me in the wts group)
 Additionally, IP address need to be whitelisted...
 
-The expected data format (json-like):
-{
-    "index": 0
-    "timestamp": 0.0
-    "previous_hash": ''
-    "current_hash": ''
-    "difficulty": 1
-    "nonce": 1
-    "transaction": []
-    "merkle_root": ''
-}
-
-How to insert data? Example:
-testData1 = {"id":0, "name":"Martin"}
-testData2 = {"id":1, "name":"Martin No Two"}
-insert_collection_RawData([testData1, testData2])
-
 Reference List:
 [1] https://www.youtube.com/watch?v=rE_bJl2GAY8
 [2] https://www.youtube.com/watch?v=nYNAH8K_UhI
 """
 
 try:
-    dbAdmin_password = "@bcdef123456"
+    dbAdmin_password = ""
     cluster = MongoClient("mongodb+srv://dbAdmin:" + urllib.parse.quote(dbAdmin_password) + "@atlascluster.g7wziyq.mongodb.net/?retryWrites=true&w=majority&authSource=admin")
     database = cluster["COMP4142-BLOCKCHAIN"] # cluster the name of the database on mongodb
 except Exception:
