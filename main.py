@@ -4,7 +4,6 @@ import time
 import rsa
 
 from hashlib import sha256
-from mongoDB import insert_collection_RawData
 """
 Reference List:
 [1] https://www.youtube.com/watch?v=zVqczFZr124
@@ -17,10 +16,12 @@ Reference List:
 
 class Transaction:
 
-  def __init__(self, sender, receiver, amounts):
-    self.sender = sender
-    self.receiver = receiver
+  def __init__(self, type, txID, address, amounts, signature):
+    self.type = type
+    self.txID = txID
+    self.address = address
     self.amounts = amounts
+    self.signature = signature
 
   def __str__(self):
     return str(self.__class__) + ": " + str(self.__dict__)
@@ -46,6 +47,25 @@ class Block:
       self.difficulty) + self.merkle_root + self.previous_hash
     return sha256(hash_data.encode()).hexdigest()
 
+  def add_transaction(self, transaction):
+    self.transaction.append(transaction)
+
+  def cal_merkle_root(self):
+    ###
+    return True
+
+
+class UTXO:
+
+  def __init__(self, txID, txIndex, address, sig, amount):
+    self.txID = txID
+    self.txIndex = txIndex
+    self.address = address
+    self.signature = sig
+    self.amount = amount
+
+  def __str__(self):
+    return str(self.__class__) + ": " + str(self.__dict__)
 
 class Blockchain:
 
@@ -57,7 +77,7 @@ class Blockchain:
     self.mining_rewards = 10
     self.block_limitation = 32
     self.pending_transactions = []
-    self.mine_address = []
+    self.UTXO_list = []
 
   def __str__(self):
     return str(self.__class__) + ": " + str(self.__dict__)
@@ -67,15 +87,18 @@ class Blockchain:
     genesis.current_hash = genesis.hash_sha256()
     self.chain.append(genesis)
 
-  def add_transaction_to_block(self, block):
+  def add_pending_transaction_to_block(self, block):
+    ###
     if len(self.pending_transactions) > self.block_limitation:
-      transcation_accepted = self.pending_transactions[:self.block_limitation]
+      accpeted_tran = self.pending_transactions[:self.block_limitation]
       self.pending_transactions = self.pending_transactions[self.
                                                             block_limitation:]
     else:
-      transcation_accepted = self.pending_transactions
+      accpeted_tran = self.pending_transactions
       self.pending_transactions = []
-    block.transaction = transcation_accepted
+    
+    for tran in accpeted_tran:
+      block.transaction.append(tran)
 
   def lastest_block(self):
     return (self.latest_nth_block(1))
@@ -88,11 +111,18 @@ class Blockchain:
     last_block = self.lastest_block()
     new_block = Block(last_block.current_hash, self.difficulty)
 
-    self.add_transaction_to_block(new_block)
+    # add coinbase transaction
+    reward_tran = Transaction("Output", "COMP4142", address, self.mining_rewards, '')
+    new_block.add_transaction(reward_tran)
+
+    # add pending transaction
+    self.add_pending_transaction_to_block(new_block)
+
+    # cal merkle root value
+    new_block.cal_merkle_root()
+
+    # mine block
     new_block.index = last_block.index + 1
-    new_block.previous_hash = last_block.current_hash
-    new_block.difficulty = self.difficulty
-    # new_block.merkle_root =
     new_block.current_hash = new_block.hash_sha256()
     while new_block.current_hash[0:self.difficulty] != '0' * self.difficulty:
       new_block.nonce += 1
@@ -102,13 +132,57 @@ class Blockchain:
     print(
       f"Hash found: {new_block.current_hash} @ difficulty {self.difficulty}, time cost: {time_consumed}s"
     )
-    self.add_mine_reward(address)
+    
+    # add new mined block to blockchain
     self.chain.append(new_block)
+    
+    # update transactions to UTXO list
+    self.update_UTXO_list(new_block)
     self.adjust_current_block_difficulty()
 
-  def add_mine_reward(self, address):
-    mine = Transaction('', address, self.mining_rewards)
-    self.pending_transactions.append(mine)
+  def cal_txID(self,block):
+    id = ''
+    for tran in block.transaction:
+      if tran.type == "Output":
+        id += str(tran.address)
+      elif tran.type == "Input":
+        id += str(tran.txID)
+    txid = sha256(id.encode()).hexdigest()
+    return txid
+
+  def update_UTXO_list(self, block):
+    # cal txID
+    txid = self.cal_txID(block)
+
+    # update UTXO 
+    for tran in block.transaction:
+      if tran.type == "Output":
+        utxo = UTXO(txid, block.index, tran.address, tran.signature, tran.amounts)
+        self.UTXO_list.append(utxo)
+
+      elif tran.type == "Input":
+        remove = []
+        amount = tran.amounts
+        i = 0
+        while not(amount == 0):
+          if self.UTXO_list[i].address == tran.address:
+            if self.UTXO_list[i].amount > amount:
+              self.UTXO_list[i].amount -= amount
+              break
+            else:
+              remove.append(self.UTXO_list[i])
+              amount -= self.UTXO_list[i].amount
+          i += 1
+              
+        # delete the spent utxo
+        for utxo in remove:
+          self.UTXO_list.remove(utxo)
+          
+          
+      
+    #UTXO(txID, txIndex, address, sig, amount)
+    
+    return True
 
   def adjust_current_block_difficulty(self):
     if len(self.chain) % self.adjust_difficulty_blocks != 1:
@@ -118,54 +192,27 @@ class Blockchain:
     else:
       start = self.chain[-1 * self.adjust_difficulty_blocks - 1].timestamp
       finish = self.chain[-1].timestamp
-      average_time_consumed = round(
-        (finish - start) / (self.adjust_difficulty_blocks), 2)
+      avg_time = round((finish - start) / (self.adjust_difficulty_blocks), 2)
 
-      if average_time_consumed > self.block_time:
-        print(
-          f"Average block time:{average_time_consumed}s. Lower the difficulty")
+      if avg_time > self.block_time:
         self.difficulty -= 1
-      else:
         print(
-          f"Average block time:{average_time_consumed}s. High up the difficulty"
+          f"Average block time:{avg_time}s: Decrease difficulty to {self.difficulty}"
         )
+
+      else:
         self.difficulty += 1
+        print(
+          f"Average block time:{avg_time}s: Increase difficulty to {self.difficulty}"
+        )
 
       return self.difficulty
 
-  '''
-  def proof_of_work(self, block: Block):
-    block.nonce = 1
-    computed_hash = block.hash_sha256()
-    while not computed_hash.startswith('0' * block.difficulty):
-      block.nonce += 1
-      computed_hash = block.hash_sha256()
-    return computed_hash
-
-  def add_block(self, block: Block, proof):
-    previous_hash = self.lastest_block().current_hash
-    if previous_hash != block.previous_hash:
-      return False
-    if not self.is_valid_proof(block, proof):
-      return False
-    block.current_hash = proof
-    self.chain.append(block)
-    return True
-
-  def is_valid_proof(self, block: Block, block_hash: str):
-    return (block_hash.startswith('0' * block.difficulty)
-            and block_hash == block.hash_sha256())
-  '''
-
   def get_balance(self, address):
     balance = 0
-    for block in self.chain:
-      for tran in block.transaction:
-        if tran.sender == address:
-          balance -= tran.amounts
-
-        if tran.receiver == address:
-          balance += tran.amounts
+    for UTXO in self.UTXO_list:
+      if UTXO.address == address:
+        balance += UTXO.amount
 
     return balance
 
@@ -181,64 +228,108 @@ class Blockchain:
 
     return public_key_address, private_key
 
+  # p2p transaction
   def build_transaction(self, sender, receiver, amount):
     if self.get_balance(sender) < amount:
       return False
 
     else:
-      tran = Transaction(sender, receiver, amount)
-      return tran
+      tran_list = []
+      # build input transactions
+      temp = amount
+      i = 0
+      while not(temp == 0):
+        if self.UTXO_list[i].address == sender:
+          if self.UTXO_list[i].amount >= temp:
+            tran = Transaction("Input", self.UTXO_list[i].txID, address, temp, '')
+            tran_list.append(tran)
+            break
+          else:
+            tran = Transaction("Input", self.UTXO_list[i].txID, address, self.UTXO_list[i].amount, '')
+            tran_list.append(tran)
+            temp -= self.UTXO_list[i].amount
 
-  def transaction_to_string(self, transaction):
-    tran = {
-      'sender': str(transaction.sender),
-      'receiver': str(transaction.receiver),
-      'amounts': transaction.amounts,
-    }
-    return str(tran)
+        i += 1
 
-  def get_transactions_string(self, block):
-    transaction = ''
-    for tran in block.transactions:
-      transaction += self.transaction_to_string(tran)
-    return transaction
-
+      # build output transactions
+      tran = Transaction("Output", '', address, amount, '')
+      tran_list.append(tran)
+      
+      return tran_list
+  
   def sign_transaction(self, transaction, private):
     private_key = rsa.PrivateKey.load_pkcs1(private)
-    tran = self.transaction_to_string(transaction)
-    sign = rsa.sign(tran.encode('utf-8'), private_key, 'SHA-256')
+    txID = str(transaction.txID)
+    sign = rsa.sign(txID.encode('utf-8'), private_key, 'SHA-256')
     return sign
 
   def add_transaction(self, transaction, signature):
-    public = '-----BEGIN RSA PUBLIC KEY-----\n'
-    public += transaction.sender
-    public += '\n-----END RSA PUBLIC KEY-----\n'
-    public_key = rsa.PublicKey.load_pkcs1(public.encode('utf-8'))
-    tran = self.transaction_to_string(transaction)
-    if transaction.amounts > self.get_balance(transaction.sender):
-      return False
-    try:
-      rsa.verify(tran.encode('utf-8'), signature, public_key)
+    if transaction.type == "Input":
+      # add Input transaction to pending
+      public = '-----BEGIN RSA PUBLIC KEY-----\n'
+      public += transaction.address
+      public += '\n-----END RSA PUBLIC KEY-----\n'
+      public_key = rsa.PublicKey.load_pkcs1(public.encode('utf-8'))
+      txID = str(transaction.txID)
+      try:
+        rsa.verify(txID.encode('utf-8'), signature, public_key)
+        self.pending_transactions.append(transaction)
+        return True
+      except Exception:
+        print("Signature not verified!")
+        
+    else:
+      # add Output transaction to pending 
       self.pending_transactions.append(transaction)
-      return True
-    except Exception:
-      print("Signature not verified!")
-
-
+      
 if __name__ == "__main__":
+  
   b = Blockchain()
   b.create_genesis_block()
   address, private = b.generate_address()
+  # mine 1
   b.pow_mine(address)
-  b.pow_mine('123')
-  print("Before")
-  print("address balance: " + str(b.get_balance(address)))
-  print("test balance: " + str(b.get_balance('test')))
-  tran = b.build_transaction(address, 'test', 5)
-  if tran:
+  # mine 2
+  b.pow_mine(address)
+  # check UTXO
+  print("Block 2: UTXO")
+  for i in range(len(b.UTXO_list)):
+    print(str(i) + ":")
+    print(b.UTXO_list[i])
+
+  # add a new transcation
+  transactions = b.build_transaction(address, 'test', 12)
+  for tran in transactions:
     sign = b.sign_transaction(tran, private)
     b.add_transaction(tran, sign)
+
+
+  print()
+   # check pending
+  print("Pending")
+  for i in b.pending_transactions:
+    print(i)
+  
+  b.pow_mine('456')
+
+  print()
+  # check UTXO
+  print("Block 3: UTXO")
+  for i in range(len(b.UTXO_list)):
+    print(str(i) + ":")
+    print(b.UTXO_list[i])
+  
+  '''
+  b.
   b.pow_mine('123')
-  print("After")
-  print("address balance: " + str(b.get_balance(address)))
-  print("test balance: " + str(b.get_balance('test')))
+  for tran in b.build_transaction('123','test',12):
+    print(tran)
+  #print(b.build_transaction('123','test',5))
+  
+  b.pow_mine(address)
+  print(b.chain[1].transaction[0])
+  for i in range(len(b.UTXO_list)):
+    print(str(i) + ":")
+    print(b.UTXO_list[i])
+  '''
+  
