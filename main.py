@@ -177,10 +177,6 @@ class Blockchain:
         # delete the spent utxo
         for utxo in remove:
           self.UTXO_list.remove(utxo)
-          
-          
-      
-    #UTXO(txID, txIndex, address, sig, amount)
     
     return True
 
@@ -252,17 +248,28 @@ class Blockchain:
         i += 1
 
       # build output transactions
-      tran = Transaction("Output", '', address, amount, '')
+      tran = Transaction("Output", '', receiver, amount, '')
       tran_list.append(tran)
       
       return tran_list
+
+  def sign_transaction(self, transactions, private):
+    tran_list = []
+    for tran in transactions:
+      if tran.type == "Input":
+        tran.signature = self.get_sign(tran, private)
+        tran_list.append(tran)
+      else: tran_list.append(tran)
+
+    return tran_list
   
-  def sign_transaction(self, transaction, private):
+  def get_sign(self, transaction, private):
     private_key = rsa.PrivateKey.load_pkcs1(private)
     txID = str(transaction.txID)
     sign = rsa.sign(txID.encode('utf-8'), private_key, 'SHA-256')
     return sign
 
+  # verify and add transaction to pending
   def add_transaction(self, transaction, signature):
     if transaction.type == "Input":
       # add Input transaction to pending
@@ -283,10 +290,10 @@ class Blockchain:
       self.pending_transactions.append(transaction)
       
 if __name__ == "__main__":
-  
   b = Blockchain()
   b.create_genesis_block()
   address, private = b.generate_address()
+  
   # mine 1
   b.pow_mine(address)
   # mine 2
@@ -299,8 +306,9 @@ if __name__ == "__main__":
 
   # add a new transcation
   transactions = b.build_transaction(address, 'test', 12)
-  for tran in transactions:
-    sign = b.sign_transaction(tran, private)
+  signed_transactions = b.sign_transaction(transactions,private)
+  for tran in signed_transactions:
+    sign = b.get_sign(tran, private)
     b.add_transaction(tran, sign)
 
 
@@ -320,16 +328,23 @@ if __name__ == "__main__":
     print(b.UTXO_list[i])
   
   '''
-  b.
-  b.pow_mine('123')
-  for tran in b.build_transaction('123','test',12):
-    print(tran)
-  #print(b.build_transaction('123','test',5))
-  
   b.pow_mine(address)
-  print(b.chain[1].transaction[0])
+  transactions = b.build_transaction(address, 'test', 10)
+  signed_transactions = b.sign_transaction(transactions,private)
+  for tran in signed_transactions:
+    sign = b.get_sign(tran, private)
+    b.add_transaction(tran, sign)
+
+  for i in b.pending_transactions:
+    print(i)
+  
+  b.pow_mine('123')
+  print()
   for i in range(len(b.UTXO_list)):
     print(str(i) + ":")
     print(b.UTXO_list[i])
   '''
+  
+  
+  
   
