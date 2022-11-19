@@ -27,15 +27,23 @@ The expected data format (json-like):
     "merkle_root": ''
 }
 
+How to insert data? Example:
+testData1 = {"id":0, "name":"Martin"}
+testData2 = {"id":1, "name":"Martin No Two"}
+insert_collection_RawData([testData1, testData2])
+
 Reference List:
 [1] https://www.youtube.com/watch?v=rE_bJl2GAY8
 """
 
-
-cluster = MongoClient("mongodb+srv://dbAdmin:" + urllib.parse.quote("@bcdef123456") + "@atlascluster.g7wziyq.mongodb.net/?retryWrites=true&w=majority")
-database = cluster["COMP4142-BLOCKCHAIN"] # cluster the name of the database on mongodb
-
+try:
+    cluster = MongoClient("mongodb+srv://dbAdmin:" + urllib.parse.quote("@bcdef123456") + "@atlascluster.g7wziyq.mongodb.net/?retryWrites=true&w=majority")
+    database = cluster["COMP4142-BLOCKCHAIN"] # cluster the name of the database on mongodb
+except Exception:
+    print("Connection Error: " + Exception)
 
 # Storage - Raw Data
 collection_RawData = database["rawdata"] # access to the "rawdata" collection on mongodb
-print(MongoClient.list_database_names)
+
+def insert_collection_RawData(rawdata):
+    collection_RawData.insert_many(rawdata)
