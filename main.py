@@ -36,6 +36,7 @@ class Block:
     self.merkle_root = ''
     self.previous_hash = previous_hash
     self.current_hash = ''
+    self.time_consumed = 0
     self.transaction = []
 
   def __str__(self):
@@ -48,6 +49,8 @@ class Block:
 
 
 class Blockchain:
+
+  BITCOIN_ONE_BLOCK_MILLISECONDS = 600000
 
   def __init__(self):
     self.chain = []
@@ -70,8 +73,7 @@ class Blockchain:
   def add_transaction_to_block(self, block):
     if len(self.pending_transactions) > self.block_limitation:
       transcation_accepted = self.pending_transactions[:self.block_limitation]
-      self.pending_transactions = self.pending_transactions[self.
-                                                            block_limitation:]
+      self.pending_transactions = self.pending_transactions[self.block_limitation:]
     else:
       transcation_accepted = self.pending_transactions
       self.pending_transactions = []
@@ -98,7 +100,9 @@ class Blockchain:
       new_block.nonce += 1
       new_block.current_hash = new_block.hash_sha256()
 
-    time_consumed = round(time.process_time() - start, 5)
+    new_block.time_consumed = (time.process_time() - start) * 1000 # adjust to milliseconds
+    print(f"new block consume time: {time.process_time() - start}")
+    time_consumed = round(new_block.time_consumed, 5)
     print(
       f"Hash found: {new_block.current_hash} @ difficulty {self.difficulty}, time cost: {time_consumed}s"
     )
@@ -111,25 +115,33 @@ class Blockchain:
     self.pending_transactions.append(mine)
 
   def adjust_current_block_difficulty(self):
+
     if len(self.chain) % self.adjust_difficulty_blocks != 1:
       return self.difficulty
     elif len(self.chain) <= self.adjust_difficulty_blocks:
       return self.difficulty
     else:
-      start = self.chain[-1 * self.adjust_difficulty_blocks - 1].timestamp
-      finish = self.chain[-1].timestamp
-      average_time_consumed = round(
-        (finish - start) / (self.adjust_difficulty_blocks), 2)
 
-      if average_time_consumed > self.block_time:
-        print(
-          f"Average block time:{average_time_consumed}s. Lower the difficulty")
-        self.difficulty -= 1
+      total_consume_time = 0
+      for i in range(self.adjust_difficulty_blocks):
+        print("current time: "+str(self.chain[-1 * i - 1].time_consumed))
+        total_consume_time += self.chain[-1 * i - 1].time_consumed
+
+      if total_consume_time > 0:
+        average_time_consumed = total_consume_time / self.adjust_difficulty_blocks
       else:
-        print(
-          f"Average block time:{average_time_consumed}s. High up the difficulty"
-        )
-        self.difficulty += 1
+        average_time_consumed = 0
+      
+
+      previous_difficulty = self.difficulty
+      if average_time_consumed > 0:
+        new_difficulty = self.difficulty * (self.BITCOIN_ONE_BLOCK_MILLISECONDS / average_time_consumed)
+      else:
+        new_difficulty = previous_difficulty
+        
+      print(f"Average block time:{average_time_consumed}s.")
+      print(f"Previous difficulty:{previous_difficulty}, New difficulty:{new_difficulty}.")
+      self.difficulty = new_difficulty
 
       return self.difficulty
 
