@@ -50,7 +50,7 @@ class Blockchain:
 
   def __init__(self):
     self.chain = []
-    self.adjust_difficulty_blocks = 20
+    self.adjust_difficulty_blocks = 3
     self.difficulty = 1
     self.block_time = 30
     self.mining_rewards = 10
@@ -103,6 +103,7 @@ class Blockchain:
     )
     self.add_mine_reward(address)
     self.chain.append(new_block)
+    self.adjust_current_block_difficulty()
 
   def add_mine_reward(self, address):
     mine = Transaction('', address, self.mining_rewards)
