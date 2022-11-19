@@ -50,11 +50,11 @@ class Block:
 
 class Blockchain:
 
-  BITCOIN_ONE_BLOCK_MILLISECONDS = 600000
+  BITCOIN_ONE_BLOCK_MILLISECONDS = 6000000
 
   def __init__(self):
     self.chain = []
-    self.adjust_difficulty_blocks = 3
+    self.adjust_difficulty_blocks = 2016
     self.difficulty = 1
     self.block_time = 30
     self.mining_rewards = 10
@@ -86,7 +86,7 @@ class Blockchain:
     return (self.chain[len(self.chain) - nth])
 
   def pow_mine(self, address):
-    start = time.process_time()
+    start = time.process_time()*1000.0
     last_block = self.lastest_block()
     new_block = Block(last_block.current_hash, self.difficulty)
 
@@ -100,11 +100,11 @@ class Blockchain:
       new_block.nonce += 1
       new_block.current_hash = new_block.hash_sha256()
 
-    new_block.time_consumed = (time.process_time() - start) * 1000 # adjust to milliseconds
-    print(f"new block consume time: {time.process_time() - start}")
-    time_consumed = round(new_block.time_consumed, 5)
+    print("current: "+str(time.process_time()*1000.0))
+    print("start: " +str(start))
+    new_block.time_consumed = round(time.process_time()*1000.0 - start) # adjust to milliseconds
     print(
-      f"Hash found: {new_block.current_hash} @ difficulty {self.difficulty}, time cost: {time_consumed}s"
+      f"Hash found: {new_block.current_hash} @ difficulty {self.difficulty}, time cost: {new_block.time_consumed}s"
     )
     self.add_mine_reward(address)
     self.chain.append(new_block)
@@ -124,23 +124,26 @@ class Blockchain:
 
       total_consume_time = 0
       for i in range(self.adjust_difficulty_blocks):
-        print("current time: "+str(self.chain[-1 * i - 1].time_consumed))
         total_consume_time += self.chain[-1 * i - 1].time_consumed
 
       if total_consume_time > 0:
-        average_time_consumed = total_consume_time / self.adjust_difficulty_blocks
+        average_time_consumed = (total_consume_time / self.adjust_difficulty_blocks)
       else:
         average_time_consumed = 0
       
-
-      previous_difficulty = self.difficulty
-      if average_time_consumed > 0:
-        new_difficulty = self.difficulty * (self.BITCOIN_ONE_BLOCK_MILLISECONDS / average_time_consumed)
-      else:
-        new_difficulty = previous_difficulty
-        
       print(f"Average block time:{average_time_consumed}s.")
-      print(f"Previous difficulty:{previous_difficulty}, New difficulty:{new_difficulty}.")
+      previous_difficulty = self.difficulty
+      
+      if average_time_consumed == 0:
+        new_difficulty = previous_difficulty
+      else:
+        new_difficulty = round(self.difficulty * (average_time_consumed / self.BITCOIN_ONE_BLOCK_MILLISECONDS))
+        
+      if new_difficulty == 0 :
+        new_difficulty = 1
+        
+      print(f"Previous difficulty: {previous_difficulty}, New difficulty: {new_difficulty}.")
+
       self.difficulty = new_difficulty
 
       return self.difficulty
@@ -243,6 +246,8 @@ if __name__ == "__main__":
   address, private = b.generate_address()
   b.pow_mine(address)
   b.pow_mine('123')
+  for i in range(2017):
+    b.pow_mine('123')
   print("Before")
   print("address balance: " + str(b.get_balance(address)))
   print("test balance: " + str(b.get_balance('test')))
