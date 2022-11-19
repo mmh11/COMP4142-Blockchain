@@ -2,6 +2,7 @@ import hashlib
 import json
 import time
 import rsa
+import math
 
 from hashlib import sha256
 from mongoDB import insert_collection_RawData
@@ -50,12 +51,12 @@ class Block:
 
 class Blockchain:
 
-  BITCOIN_ONE_BLOCK_MILLISECONDS = 6000000
+  BITCOIN_ONE_BLOCK_MILLISECONDS = 600
 
   def __init__(self):
     self.chain = []
-    self.adjust_difficulty_blocks = 2016
-    self.difficulty = 1
+    self.adjust_difficulty_blocks = 10
+    self.difficulty = 3
     self.block_time = 30
     self.mining_rewards = 10
     self.block_limitation = 32
@@ -86,7 +87,7 @@ class Blockchain:
     return (self.chain[len(self.chain) - nth])
 
   def pow_mine(self, address):
-    start = time.process_time()*1000.0
+    start = time.process_time()
     last_block = self.lastest_block()
     new_block = Block(last_block.current_hash, self.difficulty)
 
@@ -100,9 +101,8 @@ class Blockchain:
       new_block.nonce += 1
       new_block.current_hash = new_block.hash_sha256()
 
-    print("current: "+str(time.process_time()*1000.0))
-    print("start: " +str(start))
-    new_block.time_consumed = round(time.process_time()*1000.0 - start) # adjust to milliseconds
+
+    new_block.time_consumed = time.process_time() - start # adjust to milliseconds
     print(
       f"Hash found: {new_block.current_hash} @ difficulty {self.difficulty}, time cost: {new_block.time_consumed}s"
     )
@@ -132,23 +132,18 @@ class Blockchain:
         average_time_consumed = 0
       
       print(f"Average block time:{average_time_consumed}s.")
-      previous_difficulty = self.difficulty
-      
-      if average_time_consumed == 0:
-        new_difficulty = previous_difficulty
+      if average_time_consumed > self.block_time:
+        print(
+          f"Average block time:{average_time_consumed}s. Lower the difficulty")
+        self.difficulty -= 1
       else:
-        new_difficulty = round(self.difficulty * (average_time_consumed / self.BITCOIN_ONE_BLOCK_MILLISECONDS))
-        
-      if new_difficulty == 0 :
-        new_difficulty = 1
-        
-      print(f"Previous difficulty: {previous_difficulty}, New difficulty: {new_difficulty}.")
+        print(
+          f"Average block time:{average_time_consumed}s. High up the difficulty"
+        )
+        self.difficulty += 1
 
-      self.difficulty = new_difficulty
+      return self.difficulty  
 
-      return self.difficulty
-
-  '''
   def proof_of_work(self, block: Block):
     block.nonce = 1
     computed_hash = block.hash_sha256()
@@ -170,7 +165,6 @@ class Blockchain:
   def is_valid_proof(self, block: Block, block_hash: str):
     return (block_hash.startswith('0' * block.difficulty)
             and block_hash == block.hash_sha256())
-  '''
 
   def get_balance(self, address):
     balance = 0
@@ -246,7 +240,7 @@ if __name__ == "__main__":
   address, private = b.generate_address()
   b.pow_mine(address)
   b.pow_mine('123')
-  for i in range(2017):
+  for i in range(30):
     b.pow_mine('123')
   print("Before")
   print("address balance: " + str(b.get_balance(address)))
