@@ -48,6 +48,6 @@ def insert_collection_RawData(rawData):
     collection_RawData.insert_many(rawData)
 
 # Storage - Transactions (UTXO)
-collection_transactionPool = database["transactionPool"]
+collection_transactionPool = database["transactionPool"] # access to the "transactionPool" collection on mongodb
 def insert_collection_transactionPool(transactionsData):
     collection_transactionPool.insert_many(transactionsData)
