@@ -6,6 +6,7 @@ import threading
 import socket
 import sys
 import pickle
+import tkinter
 from transaction import Transaction
 from UTXO import UTXO
 from multiprocessing import Process
@@ -43,6 +44,7 @@ class Block:
 
   def add_transaction(self, transaction):
     self.transaction.append(transaction)
+
 
   def cal_merkle_root(self):
     ###
@@ -486,28 +488,15 @@ class Blockchain:
     while(True):
       self.pow_mine(address)
 
-  def user_interface(self):
-    target_host = "127.0.0.1"
-    target_port = int(sys.argv[1])
-    self.client = socket.socket(socket.AF_INET, socket.SOCK_STREAM)
-    self.client.connect((target_host, target_port))
-
-    receive_handler = threading.Thread(target=self.handle_receive, args=())
-    receive_handler.start()
-
-    command_dict = {
-        "1": "generate_address",
-        "2": "get_balance",
-        "3": "transaction"
-    }
-
+  def handle_receive(self):
     while True:
-      print("Command list:")
-      print("1. generate_address")
-      print("2. get_balance")
-      print("3. transaction")
-      command = input("Command: ")
-      
+        response = self.client.recv(4096)
+        if response:
+          print(f"[*] Message from node: {response}")
+
+
+
+    '''
       if str(command) not in command_dict.keys():
           print("Unknown command.")
           continue
@@ -518,11 +507,6 @@ class Blockchain:
           address, private_key = self.generate_address()
           print(f"Address: {address}")
           print(f"Private key: {private_key}")
-
-      elif command_dict[str(command)] == "get_balance":
-          address = input("Address: ")
-          message['address'] = address
-          self.client.send(pickle.dumps(message))
 
       elif command_dict[str(command)] == "transaction":
           address = input("Address: ")
@@ -539,25 +523,47 @@ class Blockchain:
           message["signature"] = signature
 
           self.client.send(pickle.dumps(message))
-
-      else:
-          print("Unknown command.")
-      time.sleep(1)
-
-  def handle_receive(self):
-    while True:
-        response = self.client.recv(4096)
-        if response:
-            print(f"[*] Message from node: {response}")
+  '''
         
 if __name__ == "__main__":
   b = Blockchain()
 
+  target_host = "127.0.0.1"
+  target_port = int(sys.argv[1])
+  b.client = socket.socket(socket.AF_INET, socket.SOCK_STREAM)
+  b.client.connect((target_host, target_port))
+
+  receive_handler = threading.Thread(target=b.handle_receive, args=())
+  receive_handler.start()
+
   p1 = Process(target=b.start, args=())
-  p2 = Process(target=b.user_interface, args=())
-  p2.start()
-  time.sleep(5)
+
   p1.start()
+
+  # UI related
+  root= tkinter.Tk()
+  root.title("Blockchain App")
+  canvas1 = tkinter.Canvas(root, width = 350, height = 200)
+  canvas1.pack()
+
+  AddressLabel = tkinter.Label(root, text="Address")
+  AddressEntry = tkinter.Entry(root)
+  canvas1.create_window(50, 50, window=AddressLabel)
+  canvas1.create_window(200, 50, window=AddressEntry)
+
+  def ui_get_balance():
+    message = {
+      "request": "get_balance"
+    }
+    address = AddressEntry.get()
+    message['address'] = address
+    b.client.send(pickle.dumps(message))
+
+  GetBal_button = tkinter.Button(text='Get Balance', command=ui_get_balance)
+  canvas1.create_window(270, 50, window=GetBal_button)
+  
+  root.mainloop()
+  
 
   '''
   b.create_genesis_block()
