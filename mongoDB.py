@@ -21,7 +21,7 @@ Reference List:
 """
 
 try:
-    dbAdmin_password = ""
+    dbAdmin_password = "@bcdef123456"
     cluster = MongoClient("mongodb+srv://dbAdmin:" + urllib.parse.quote(dbAdmin_password) + "@atlascluster.g7wziyq.mongodb.net/?retryWrites=true&w=majority&authSource=admin")
     database = cluster["COMP4142-BLOCKCHAIN"] # cluster the name of the database on mongodb
 except Exception:
