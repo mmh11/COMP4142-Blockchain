@@ -37,6 +37,11 @@ def insert_collection_transactionPool(transactionsData):
     collection_transactionPool = database["transactionPool"] # access to the "transactionPool" collection on mongodb
     collection_transactionPool.insert_many(transactionsData)
 
+# Get Data - Lastest block
+def get_latestblock_fromDB():
+    collection_RawData = database["rawdata"] # access to the "rawdata" collection on mongodb
+    return(collection_RawData.find_one({},sort=[( '_id', pymongo.DESCENDING )]))
+
 # Examples of inserting new data to collections
 """
 insert_collection_RawData([{
