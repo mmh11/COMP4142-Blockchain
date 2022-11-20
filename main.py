@@ -498,23 +498,8 @@ def handle_receive():
       response = client.recv(4096)
       if response:
         print(f"[*] Message from node: {response}")
-        
-if __name__ == "__main__":
-  b = Blockchain()
-  print("Initial chain length: "+str(len(b.chain)))
 
-  target_host = "127.0.0.1"
-  target_port = int(sys.argv[1])
-  client = socket.socket(socket.AF_INET, socket.SOCK_STREAM)
-  client.connect((target_host, target_port))
-
-  receive_handler = threading.Thread(target=handle_receive, args=())
-  receive_handler.start()
-
-  p1 = Process(target=b.start, args=())
-
-  p1.start()
-
+def user_interface(b):
   # UI related
   root= tkinter.Tk()
   root.title("Blockchain App")
@@ -580,7 +565,27 @@ if __name__ == "__main__":
   canvas1.create_window(350, 200, window=Pay_button)
 
   root.mainloop()
-  
+
+        
+if __name__ == "__main__":
+  b = Blockchain()
+
+  target_host = "127.0.0.1"
+  target_port = int(sys.argv[1])
+  client = socket.socket(socket.AF_INET, socket.SOCK_STREAM)
+  client.connect((target_host, target_port))
+
+  receive_handler = threading.Thread(target=handle_receive, args=())
+  receive_handler.start()
+
+  bc_process = threading.Thread(target=b.start)
+  bc_process.start() 
+
+  ui_process = threading.Thread(target=user_interface(b), args=())
+  ui_process.daemon = True
+  ui_process.start()
+
+
 
   '''
   b.create_genesis_block()
