@@ -153,6 +153,10 @@ class Blockchain:
       
   def receive_broadcast_block(self, block_data):
     last_block = self.chain[-1]
+    print("last_block:")
+    print(last_block)
+    print("block_data:")
+    print(block_data)
     # Check the hash of received block
     if block_data.previous_hash != last_block.current_hash:
         print("[**] Received block error: Previous hash not matched!")
@@ -165,9 +169,9 @@ class Blockchain:
         print("[**] Received block error: Hash calculation not matched!")
         return False
     else:
-        if block_data.hash[0: self.difficulty] == '0' * self.difficulty:
+        if block_data.current_hash[0: self.difficulty] == '0' * self.difficulty:
             for each_transaction in block_data.transaction:
-                    self.pending_transaction.remove(each_transaction)
+              self.pending_transactions.remove(each_transaction)
             self.receive_verified_block = True
             self.chain.append(block_data)
             print(f"[**] Received block successfully!")
@@ -289,6 +293,7 @@ class Blockchain:
 
     # mine block
     new_block.index = last_block.index + 1
+    new_block.previous_hash = last_block.current_hash
     new_block.current_hash = new_block.hash_sha256()
     while new_block.current_hash[0:self.difficulty] != '0' * self.difficulty:
       new_block.nonce += 1
@@ -299,6 +304,8 @@ class Blockchain:
     print(
       f"Hash found: {new_block.current_hash} @ difficulty {self.difficulty}, time cost: {new_block.time_consumed}s"
     )
+
+    self.broadcast_block(new_block)
     
     # add new mined block to blockchain
     self.chain.append(new_block)
