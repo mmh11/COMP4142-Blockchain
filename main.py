@@ -19,6 +19,7 @@ Reference List:
 [3] https://ithelp.ithome.com.tw/users/20119982/ironman/2255?page=1 <- more comprehensive tutorial, recommend refer this pls.
 """
 client = ''
+isReceiveBlock = False
 
 # Blockchain prototype - The basic content
 
@@ -143,13 +144,13 @@ class Blockchain:
           "data": data
       }
       for node_address in self.node_address:
-          if node_address != address_concat:
-              target_host = node_address.split(":")[0]
-              target_port = int(node_address.split(":")[1])
-              client = socket.socket(socket.AF_INET, socket.SOCK_STREAM)
-              client.connect((target_host, target_port))
-              client.sendall(pickle.dumps(message))
-              client.close()
+        if node_address != address_concat:
+          target_host = node_address.split(":")[0]
+          target_port = int(node_address.split(":")[1])
+          client = socket.socket(socket.AF_INET, socket.SOCK_STREAM)
+          client.connect((target_host, target_port))
+          client.sendall(pickle.dumps(message))
+          client.close()
       
   def receive_broadcast_block(self, block_data):
     last_block = self.chain[-1]
@@ -169,6 +170,7 @@ class Blockchain:
         print("[**] Received block error: Hash calculation not matched!")
         return False
     else:
+        isReceiveBlock = True
         if block_data.current_hash[0: self.difficulty] == '0' * self.difficulty:
           print("block_data.transaction: ")
           print(block_data.transaction)
@@ -180,10 +182,12 @@ class Blockchain:
 
           self.receive_verified_block = True
           self.chain.append(block_data)
+          isReceiveBlock = False
           print(f"[**] Received block successfully!")
           return True
         else:
           print(f"[**] Received block error: Hash not matched by diff!")
+          isReceiveBlock = False
           return False
   
   # receive client request
@@ -283,42 +287,44 @@ class Blockchain:
     return (self.chain[-1 * nth])
 
   def pow_mine(self, address):
-    start = time.process_time()
-    last_block = self.lastest_block()
-    new_block = Block(last_block.current_hash, self.difficulty)
+      start = time.process_time()
+      last_block = self.lastest_block()
+      new_block = Block(last_block.index + 1, self.difficulty,
+                        last_block.current_hash)
 
-    # add coinbase transaction
-    reward_tran = Transaction("Output", "COMP4142", address, self.mining_rewards, '')
-    new_block.add_transaction(reward_tran)
+      # add coinbase transaction
+      reward_tran = Transaction("Output", "COMP4142", address,
+                                self.mining_rewards, '')
+      new_block.add_transaction(reward_tran)
 
-    # add pending transaction
-    self.add_pending_transaction_to_block(new_block)
+      # add pending transaction
+      self.add_pending_transaction_to_block(new_block)
 
-    # cal merkle root value
-    new_block.cal_merkle_root()
+      # cal merkle root value
+      new_block.cal_merkle_root()
 
-    # mine block
-    new_block.index = last_block.index + 1
-    new_block.previous_hash = last_block.current_hash
-    new_block.current_hash = new_block.hash_sha256()
-    while new_block.current_hash[0:self.difficulty] != '0' * self.difficulty:
-      new_block.nonce += 1
+      # mine block
       new_block.current_hash = new_block.hash_sha256()
+      while new_block.current_hash[0:self.difficulty] != '0' * self.difficulty:
+        new_block.nonce += 1
+        new_block.current_hash = new_block.hash_sha256()
 
+      time_consumed = round(time.process_time() - start, 5)
+      print(
+        f"Hash found: {new_block.current_hash} @ difficulty {self.difficulty}, time cost: {time_consumed}s"
+      )
 
-    new_block.time_consumed = time.process_time() - start # adjust to milliseconds
-    print(
-      f"Hash found: {new_block.current_hash} @ difficulty {self.difficulty}, time cost: {new_block.time_consumed}s"
-    )
+      if isReceiveBlock == False:
+        if new_block.previous_hash == self.lastest_block().current_hash:
+          
+          self.broadcast_block(new_block)
+          
+          # add new mined block to blockchain
+          self.chain.append(new_block)
 
-    self.broadcast_block(new_block)
-    
-    # add new mined block to blockchain
-    self.chain.append(new_block)
-    
-    # update transactions to UTXO list
-    self.update_UTXO_list(new_block)
-    self.adjust_current_block_difficulty()
+          # update transactions to UTXO list
+          self.update_UTXO_list(new_block)
+          self.adjust_current_block_difficulty()
 
   def cal_txID(self,block):
     id = ''
@@ -504,7 +510,8 @@ class Blockchain:
     if len(sys.argv) < 3:
       self.create_genesis_block()
     while(True):
-      self.pow_mine(address)
+      if isReceiveBlock == False:
+        self.pow_mine(address)
 
 def handle_receive():
   while True:
