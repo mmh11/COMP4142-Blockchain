@@ -18,6 +18,7 @@ Reference List:
 [2] https://www.activestate.com/blog/how-to-build-a-blockchain-in-python/
 [3] https://ithelp.ithome.com.tw/users/20119982/ironman/2255?page=1 <- more comprehensive tutorial, recommend refer this pls.
 """
+client = ''
 
 # Blockchain prototype - The basic content
 
@@ -114,6 +115,7 @@ class Blockchain:
             break
     client.close()
     response = pickle.loads(response)["blockchain_data"]
+    print("assigning blockchain to local")
 
     self.adjust_difficulty_blocks = response.adjust_difficulty_blocks
     self.difficulty = response.difficulty
@@ -124,6 +126,8 @@ class Blockchain:
     self.pending_transactions = response.pending_transactions
     self.UTXO_list = response.UTXO_list
     self.node_address.update(response.node_address)
+
+    print("response chain: " + str(len(response.chain)))
   
   # broadcast
   def broadcast_block(self, new_block):
@@ -216,6 +220,7 @@ class Blockchain:
               "request": "upload_blockchain",
               "blockchain_data": self
             }
+            print(message)
             connection.sendall(pickle.dumps(message))
             continue
           # 接收到挖掘出的新區塊
@@ -265,7 +270,7 @@ class Blockchain:
     return (self.latest_nth_block(1))
 
   def latest_nth_block(self, nth: int):
-    return (self.chain[len(self.chain) - nth])
+    return (self.chain[-1 * nth])
 
   def pow_mine(self, address):
     start = time.process_time()
@@ -427,11 +432,11 @@ class Blockchain:
       while not(temp == 0):
         if self.UTXO_list[i].address == sender:
           if self.UTXO_list[i].amount >= temp:
-            tran = Transaction("Input", self.UTXO_list[i].txID, address, temp, '')
+            tran = Transaction("Input", self.UTXO_list[i].txID, sender, temp, '')
             tran_list.append(tran)
             break
           else:
-            tran = Transaction("Input", self.UTXO_list[i].txID, address, self.UTXO_list[i].amount, '')
+            tran = Transaction("Input", self.UTXO_list[i].txID, sender, self.UTXO_list[i].amount, '')
             tran_list.append(tran)
             temp -= self.UTXO_list[i].amount
 
@@ -488,52 +493,22 @@ class Blockchain:
     while(True):
       self.pow_mine(address)
 
-  def handle_receive(self):
-    while True:
-        response = self.client.recv(4096)
-        if response:
-          print(f"[*] Message from node: {response}")
-
-
-
-    '''
-      if str(command) not in command_dict.keys():
-          print("Unknown command.")
-          continue
-      message = {
-          "request": command_dict[str(command)]
-      }
-      if command_dict[str(command)] == "generate_address":
-          address, private_key = self.generate_address()
-          print(f"Address: {address}")
-          print(f"Private key: {private_key}")
-
-      elif command_dict[str(command)] == "transaction":
-          address = input("Address: ")
-          private_key = input("Private_key: ")
-          receiver = input("Receiver: ")
-          amount = input("Amount: ")
-          fee = input("Fee: ")
-          comment = input("Comment: ")
-          new_transaction = self.build_transaction(
-            address, receiver, int(amount)
-          )
-          signature = self.sign_transaction(new_transaction, private_key)
-          message["data"] = new_transaction
-          message["signature"] = signature
-
-          self.client.send(pickle.dumps(message))
-  '''
+def handle_receive():
+  while True:
+      response = client.recv(4096)
+      if response:
+        print(f"[*] Message from node: {response}")
         
 if __name__ == "__main__":
   b = Blockchain()
+  print("Initial chain length: "+str(len(b.chain)))
 
   target_host = "127.0.0.1"
   target_port = int(sys.argv[1])
-  b.client = socket.socket(socket.AF_INET, socket.SOCK_STREAM)
-  b.client.connect((target_host, target_port))
+  client = socket.socket(socket.AF_INET, socket.SOCK_STREAM)
+  client.connect((target_host, target_port))
 
-  receive_handler = threading.Thread(target=b.handle_receive, args=())
+  receive_handler = threading.Thread(target=handle_receive, args=())
   receive_handler.start()
 
   p1 = Process(target=b.start, args=())
@@ -543,7 +518,7 @@ if __name__ == "__main__":
   # UI related
   root= tkinter.Tk()
   root.title("Blockchain App")
-  canvas1 = tkinter.Canvas(root, width = 350, height = 200)
+  canvas1 = tkinter.Canvas(root, width = 400, height = 400)
   canvas1.pack()
 
   AddressLabel = tkinter.Label(root, text="Address")
@@ -557,11 +532,53 @@ if __name__ == "__main__":
     }
     address = AddressEntry.get()
     message['address'] = address
-    b.client.send(pickle.dumps(message))
+    client.send(pickle.dumps(message))
 
   GetBal_button = tkinter.Button(text='Get Balance', command=ui_get_balance)
-  canvas1.create_window(270, 50, window=GetBal_button)
-  
+  canvas1.create_window(350, 50, window=GetBal_button)
+
+  PaymentLabel = tkinter.Label(root, text='Payment')
+  Payment_SenderLabel = tkinter.Label(root, text='Your address')
+  Payment_SenderKeyLabel = tkinter.Label(root, text='Your Private Key')
+  Payment_ReceiverLabel = tkinter.Label(root, text='Receiver address')
+  Payment_AmountLabel = tkinter.Label(root, text='Amount')
+
+  Payment_SenderEntry = tkinter.Entry(root)
+  Payment_SenderKeyEntry = tkinter.Entry(root)
+  Payment_ReceiverEntry = tkinter.Entry(root)
+  Payment_AmountEntry = tkinter.Entry(root)  
+
+  canvas1.create_window(50, 100, window=PaymentLabel)
+  canvas1.create_window(50, 125, window=Payment_SenderLabel)
+  canvas1.create_window(50, 150, window=Payment_SenderKeyLabel)
+  canvas1.create_window(50, 175, window=Payment_ReceiverLabel)
+  canvas1.create_window(50, 200, window=Payment_AmountLabel)
+  canvas1.create_window(200, 125, window=Payment_SenderEntry)
+  canvas1.create_window(200, 150, window=Payment_SenderKeyEntry)
+  canvas1.create_window(200, 175, window=Payment_ReceiverEntry)
+  canvas1.create_window(200, 200, window=Payment_AmountEntry) 
+
+  def ui_payment():
+    message = {
+      "request": "transaction"
+    }
+    address = Payment_SenderEntry.get()
+    private_key = Payment_SenderKeyEntry.get()
+    receiver = Payment_ReceiverEntry.get()
+    amount = Payment_AmountEntry.get()
+    new_transaction = b.build_transaction(
+      address, receiver, int(amount)
+    )
+    signature = b.sign_transaction(new_transaction, private_key)
+    message["data"] = new_transaction
+    message["signature"] = signature
+
+    client.send(pickle.dumps(message))
+
+
+  Pay_button = tkinter.Button(text='Pay Coin', command=ui_payment)
+  canvas1.create_window(350, 200, window=Pay_button)
+
   root.mainloop()
   
 
