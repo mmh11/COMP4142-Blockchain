@@ -13,7 +13,6 @@ User Password: ****(Ask me in the wts group)
 The admin user account of this Mongo Database:
 User Name: dbAdmin
 User Password: ****(Ask me in the wts group)
-Additionally, IP address need to be whitelisted...
 
 Reference List:
 [1] https://www.youtube.com/watch?v=rE_bJl2GAY8
@@ -41,6 +40,13 @@ def insert_collection_transactionPool(transactionsData):
 def get_latestblock_fromDB():
     collection_RawData = database["rawdata"] # access to the "rawdata" collection on mongodb
     return(collection_RawData.find_one({},sort=[( '_id', pymongo.DESCENDING )]))
+
+# Check Data - If block exist
+def check_blockExist(blockIndex):
+    collection_RawData = database["rawdata"] # access to the "rawdata" collection on mongodb
+    if collection_RawData.count_documents({ "index": blockIndex }):
+        return(True)
+    return(False)
 
 # Examples of inserting new data to collections
 """
