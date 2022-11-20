@@ -170,15 +170,21 @@ class Blockchain:
         return False
     else:
         if block_data.current_hash[0: self.difficulty] == '0' * self.difficulty:
-            for each_transaction in block_data.transaction:
+          print("block_data.transaction: ")
+          print(block_data.transaction)
+          for each_transaction in block_data.transaction:
+            try:
               self.pending_transactions.remove(each_transaction)
-            self.receive_verified_block = True
-            self.chain.append(block_data)
-            print(f"[**] Received block successfully!")
-            return True
+            except Exception:
+              print("Transaction isn't existed.")
+
+          self.receive_verified_block = True
+          self.chain.append(block_data)
+          print(f"[**] Received block successfully!")
+          return True
         else:
-            print(f"[**] Received block error: Hash not matched by diff!")
-            return False
+          print(f"[**] Received block error: Hash not matched by diff!")
+          return False
   
   # receive client request
   def receive_socket_message(self, connection, address):
