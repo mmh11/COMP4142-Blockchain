@@ -24,6 +24,56 @@ isReceiveBlock = False
 
 # Blockchain prototype - The basic content
 
+
+
+class Node:
+
+  def __init__(self, value):
+    self.left = None
+    self.right = None
+    self.value = value
+    self.hash = calculate_hash(self.value)
+
+def calculate_hash(value):
+  return hashlib.sha256(value.encode('utf-8')).hexdigest()
+
+
+def build_merkle_tree(leaves):
+  nodes = []
+
+  for i in leaves:
+    nodes.append(Node(i))
+
+  #print(nodes)
+
+  while len(nodes) != 1:
+    temp = []
+    for i in range(0, len(nodes), 2):
+      node1 = nodes[i]
+      node2 = nodes[i + 1]
+      #print(f'left hash: {node1.hash}')
+      #print(f'right hash: {node2.hash}')
+      concat_hash = node1.hash + node2.hash
+      parent = Node(concat_hash)
+      parent.left = node1
+      parent.right = node2
+      #print(f'parent hash: {parent.hash}\n')
+      temp.append(parent)
+    nodes = temp
+  return nodes[0]
+
+def padding(leaves):
+  size = len(leaves)
+  if size == 0:
+    return ['']
+  reduced_size = int(math.pow(2, int(math.log2(size))))
+  pad_size = 0
+  if reduced_size != size:
+    pad_size = 2 * reduced_size - size
+  for i in range(pad_size):
+    leaves.append('')
+  return leaves
+
 class Block:
 
   def __init__(self, index, difficulty, previous_hash='', current_hash=''):
@@ -42,7 +92,7 @@ class Block:
 
   def hash_sha256(self):
     hash_data = str(self.index) + str(self.timestamp) + str(self.nonce) + str(
-      self.difficulty) + self.merkle_root + self.previous_hash
+      self.difficulty) + str(self.merkle_root) + self.previous_hash
     return sha256(hash_data.encode()).hexdigest()
 
   def add_transaction(self, transaction):
@@ -314,7 +364,7 @@ class Blockchain:
                         last_block.current_hash)
 
       # add coinbase transaction
-      reward_tran = Transaction("Output", "COMP4142", address,
+      reward_tran = Transaction("Output", "COMP4142", '',address,
                                 self.mining_rewards, '')
       new_block.add_transaction(reward_tran)
 
@@ -322,7 +372,7 @@ class Blockchain:
       self.add_pending_transaction_to_block(new_block)
 
       # cal merkle root value
-      new_block.cal_merkle_root()
+      new_block.merkle_root =new_block.cal_merkle_root().hash
 
       # mine block
       new_block.current_hash = new_block.hash_sha256()
@@ -351,7 +401,7 @@ class Blockchain:
 
           transation_array = []
           for i in new_block.transaction:
-            transation_array.append({"type":i.type, "txID":i.txID, "address":i.address, "amounts":i.amounts, "signature":i.signature})
+            transation_array.append({"type":i.type, "txID":i.txID, "txIndex":i.txIndex, "address":i.address, "amounts":i.amounts, "signature":i.signature})
           insert_collection_RawData([{
               "index":new_block.index, 
               "timestamp":new_block.timestamp, 
@@ -492,18 +542,18 @@ class Blockchain:
       while not(temp == 0):
         if self.UTXO_list[i].address == sender:
           if self.UTXO_list[i].amount >= temp:
-            tran = Transaction("Input", self.UTXO_list[i].txID, sender, temp, '')
+            tran = Transaction("Input", self.UTXO_list[i].txID, self.UTXO_list[i].txIndex, address, temp, '')
             tran_list.append(tran)
             break
           else:
-            tran = Transaction("Input", self.UTXO_list[i].txID, sender, self.UTXO_list[i].amount, '')
+            tran = Transaction("Input", self.UTXO_list[i].txID, self.UTXO_list[i].txIndex,sender, self.UTXO_list[i].amount, '')
             tran_list.append(tran)
             temp -= self.UTXO_list[i].amount
 
         i += 1
 
       # build output transactions
-      tran = Transaction("Output", '', receiver, amount, '')
+      tran = Transaction("Output", '', '', receiver, amount, '')
       tran_list.append(tran)
       
       return tran_list
