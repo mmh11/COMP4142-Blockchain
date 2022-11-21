@@ -331,6 +331,12 @@ class Blockchain:
         new_block.current_hash = new_block.hash_sha256()
 
       time_consumed = round(time.process_time() - start, 5)
+
+      # Update chain if it is not synchronized
+      if (self.lastest_block().current_hash != get_latestblock_fromDB()["current_hash"]):
+          self.get_chain_data()
+          return
+
       print(
         f"Hash found: {new_block.current_hash} @ difficulty {self.difficulty}, time cost: {time_consumed}s"
       )
@@ -546,6 +552,9 @@ class Blockchain:
       self.create_genesis_block()
       self.get_chain_data()
     while(True):
+      # Update chain if it is not synchronized
+      if (self.lastest_block().current_hash != get_latestblock_fromDB()["current_hash"]):
+          self.get_chain_data()
       if isReceiveBlock == False:
         self.pow_mine(address)
 
