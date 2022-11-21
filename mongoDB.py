@@ -48,6 +48,12 @@ def check_blockExist(blockIndex):
         return(True)
     return(False)
 
+# Count Data
+def count_rawdata():
+    collection_RawData = database["rawdata"] # access to the "rawdata" collection on mongodb
+    return(collection_RawData.count_documents({}))
+
+# Find Data
 def find_document(label, value, collection):
     collection_RawData = database[collection] # access to the collection on mongodb
     return(collection_RawData.find_one({label:value}))
@@ -78,7 +84,7 @@ insert_collection_transactionPool([{
 rawData_validator = {
     "$jsonSchema": {
         "bsonType": "object",
-        "required": [ "index", "timestamp", "current_hash", "difficulty", "nonce", "transaction", "merkle_root"],
+        "required": [ "index", "timestamp", "current_hash", "difficulty", "nonce"],
         "properties": {
             "index": {
                 "bsonType": "int",
@@ -107,11 +113,11 @@ rawData_validator = {
             },
             "transaction": {
                 "bsonType": "array",
-                "description": "transaction must be an array and it is required"
+                "description": "transaction must be an array"
             },
             "merkle_root": {
                 "bsonType": "string",
-                "description": "merkle_root must be a string and it is required"
+                "description": "merkle_root must be a string"
             },
         }
     }

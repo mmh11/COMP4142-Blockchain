@@ -10,7 +10,7 @@ import tkinter
 from transaction import Transaction
 from UTXO import UTXO
 from multiprocessing import Process
-from mongoDB import get_latestblock_fromDB,insert_collection_RawData, find_document
+from mongoDB import get_latestblock_fromDB,insert_collection_RawData, find_document, get_latestblock_fromDB, count_rawdata
 
 from hashlib import sha256
 """
@@ -343,6 +343,20 @@ class Blockchain:
           # add new mined block to blockchain
           self.chain.append(new_block)
 
+          transation_array = []
+          for i in new_block.transaction:
+            transation_array.append({"type":i.type, "txID":i.txID, "address":i.address, "amounts":i.amounts, "signature":i.signature})
+          insert_collection_RawData([{
+              "index":new_block.index, 
+              "timestamp":new_block.timestamp, 
+              "previous_hash":new_block.previous_hash, 
+              "current_hash":new_block.current_hash, 
+              "difficulty":new_block.difficulty, 
+              "nonce":new_block.nonce, 
+              "transaction":transation_array, 
+              "merkle_root":new_block.merkle_root
+          }])
+      
           # update transactions to UTXO list
           self.update_UTXO_list(new_block)
           self.adjust_current_block_difficulty()
@@ -530,9 +544,30 @@ class Blockchain:
     print(f"Miner private: {private}")
     if len(sys.argv) < 3:
       self.create_genesis_block()
+      self.get_chain_data()
     while(True):
       if isReceiveBlock == False:
         self.pow_mine(address)
+
+  def get_chain_data(self):
+    # Update/Get chain data from mongo DB
+    get_block_index = 1
+    while(get_block_index < count_rawdata()):
+      single_block_data = Block(find_document("index",get_block_index,"rawdata")["index"], find_document("index",get_block_index,"rawdata")["difficulty"])
+      single_block_data.index = find_document("index",get_block_index,"rawdata")["index"]
+      single_block_data.timestamp = find_document("index",get_block_index,"rawdata")["timestamp"]
+      single_block_data.previous_hash = find_document("index",get_block_index,"rawdata")["previous_hash"]
+      single_block_data.current_hash = find_document("index",get_block_index,"rawdata")["current_hash"]
+      single_block_data.difficulty = find_document("index",get_block_index,"rawdata")["difficulty"]
+      single_block_data.nonce = find_document("index",get_block_index,"rawdata")["nonce"]
+      # Update/Get every transation in that block
+      for downloading_transation in find_document("index",get_block_index,"rawdata")["transaction"]:
+        transation_record = Transaction(downloading_transation["type"], downloading_transation["txID"], downloading_transation["address"], downloading_transation["amounts"], downloading_transation["signature"])
+        single_block_data.add_transaction(transation_record)
+      single_block_data.merkle_root = find_document("index",get_block_index,"rawdata")["merkle_root"]
+      # Update that block and add back into local chain
+      self.chain.append(single_block_data)
+      get_block_index += 1
 
 def handle_receive():
   while True:
