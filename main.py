@@ -10,7 +10,7 @@ import tkinter
 from transaction import Transaction
 from UTXO import UTXO
 from multiprocessing import Process
-from mongoDB import get_latestblock_fromDB
+from mongoDB import get_latestblock_fromDB,insert_collection_RawData, find_document
 
 from hashlib import sha256
 """
@@ -264,9 +264,29 @@ class Blockchain:
     return str(self.__class__) + ": " + str(self.__dict__)
 
   def create_genesis_block(self):
-    genesis = Block(0, self.difficulty, "", "Group HCCW")
-    genesis.current_hash = genesis.hash_sha256()
-    self.chain.append(genesis)
+    if (get_latestblock_fromDB()==None):
+      genesis = Block(0, self.difficulty, "", "Group HCCW")
+      genesis.current_hash = genesis.hash_sha256()
+      self.chain.append(genesis)
+      # Noted that the merkle root of the genesis block is equal to the hash of the transaction in it
+      insert_collection_RawData([{
+        "index": 0, 
+        "timestamp": int(time.time()), 
+        "previous_hash": "", 
+        "current_hash": genesis.current_hash, 
+        "difficulty": self.difficulty, 
+        "nonce": 0, 
+        "transaction": ["Genesis Transation"], 
+        "merkle_root": sha256("Genesis Transation".encode()).hexdigest()
+      }])
+    else:
+      genesis = Block(0, self.difficulty, "", "Group HCCW")
+      genesis.timestamp = find_document("index",0,"rawdata")["timestamp"]
+      genesis.current_hash = find_document("index",0,"rawdata")["current_hash"]
+      genesis.nonce = find_document("index",0,"rawdata")["nonce"]
+      genesis.transaction = find_document("index",0,"rawdata")["transaction"]
+      genesis.merkle_root = find_document("index",0,"rawdata")["merkle_root"]
+      self.chain.append(genesis)
 
   def add_pending_transaction_to_block(self, block):
     ###

@@ -48,6 +48,10 @@ def check_blockExist(blockIndex):
         return(True)
     return(False)
 
+def find_document(label, value, collection):
+    collection_RawData = database[collection] # access to the collection on mongodb
+    return(collection_RawData.find_one({label:value}))
+
 # Examples of inserting new data to collections
 """
 insert_collection_RawData([{
