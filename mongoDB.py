@@ -74,7 +74,7 @@ insert_collection_transactionPool([{
 rawData_validator = {
     "$jsonSchema": {
         "bsonType": "object",
-        "required": [ "index", "timestamp", "previous_hash", "current_hash", "difficulty", "nonce", "transaction", "merkle_root"],
+        "required": [ "index", "timestamp", "current_hash", "difficulty", "nonce", "transaction", "merkle_root"],
         "properties": {
             "index": {
                 "bsonType": "int",
@@ -87,7 +87,7 @@ rawData_validator = {
             },
             "previous_hash": {
                 "bsonType": "string",
-                "description": "previous_hash must be a string and it is required"
+                "description": "previous_hash must be a string"
             },
             "current_hash": {
                 "bsonType": "string",

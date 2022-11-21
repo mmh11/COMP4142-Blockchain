@@ -10,6 +10,7 @@ import tkinter
 from transaction import Transaction
 from UTXO import UTXO
 from multiprocessing import Process
+from mongoDB import get_latestblock_fromDB
 
 from hashlib import sha256
 """
@@ -25,14 +26,14 @@ isReceiveBlock = False
 
 class Block:
 
-  def __init__(self, index, difficulty, previous_hash=''):
-    self.index = 0
+  def __init__(self, index, difficulty, previous_hash='', current_hash=''):
+    self.index = index
     self.timestamp = int(time.time())
     self.nonce = 0
     self.difficulty = difficulty
     self.merkle_root = ''
     self.previous_hash = previous_hash
-    self.current_hash = ''
+    self.current_hash = current_hash
     self.time_consumed = 0
     self.transaction = []
 
@@ -263,7 +264,7 @@ class Blockchain:
     return str(self.__class__) + ": " + str(self.__dict__)
 
   def create_genesis_block(self):
-    genesis = Block(self.difficulty, ["COMP4142 Group Project"])
+    genesis = Block(0, self.difficulty, "", "Group HCCW")
     genesis.current_hash = genesis.hash_sha256()
     self.chain.append(genesis)
 
