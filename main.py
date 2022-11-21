@@ -532,7 +532,7 @@ class Blockchain:
   # p2p transaction
   def build_transaction(self, sender, receiver, amount):
     if self.get_balance(sender) < amount:
-      return False
+      print("You do not have enough balance!")
 
     else:
       tran_list = []
