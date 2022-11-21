@@ -58,6 +58,10 @@ def find_document(label, value, collection):
     collection_RawData = database[collection] # access to the collection on mongodb
     return(collection_RawData.find_one({label:value}))
 
+# Delete all document in rawdata
+def reset_rawdata():
+    collection_RawData = database["rawdata"] # access to the collection on mongodb
+    collection_RawData.delete_many({})
 # Examples of inserting new data to collections
 """
 insert_collection_RawData([{
@@ -156,3 +160,4 @@ transactionPool_validator = {
 if __name__ == "__main__":
     database.command("collMod", "rawdata", validator=rawData_validator)
     database.command("collMod", "transactionPool", validator=transactionPool_validator)
+    # reset_rawdata()
