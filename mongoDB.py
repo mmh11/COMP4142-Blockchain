@@ -68,26 +68,6 @@ def reset_rawdata():
     collection_RawData = database["rawdata"] # access to the collection on mongodb
     collection_RawData.delete_many({})
 # Examples of inserting new data to collections
-"""
-insert_collection_RawData([{
-    "index":0, 
-    "timestamp":123141, 
-    "previous_hash":"0000000000078YEW78RHW8EHFWEFHWEUS", 
-    "current_hash":"0000000000078YEW78RHW8EHFWEFHWEUS", 
-    "difficulty":3, 
-    "nonce":1, 
-    "transaction":["000982J9R3F2EWSNEWIEU3WIDNJWOGBS0DFSJEO3446","0000000000078YEW78RHW8EHFWEFHWEUS"], 
-    "merkle_root":"0000000000078YEW78RHW8EHFWEFHWEUS"
-}])
-
-insert_collection_transactionPool([{
-    "sender":"Martin", 
-    "recipient":"Martin No.2", 
-    "amount":"0.5", 
-    "txid":"000982J9R3F2EWSNEWIEU3WIDNJWOGBS0DFSJEO3446", 
-    "previous_hash":"0000000000078YEW78RHW8EHFWEFHWEUS",
-}])
-"""
 
 # Scheme for the "rawdata" collection
 rawData_validator = {
