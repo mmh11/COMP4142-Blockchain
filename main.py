@@ -7,6 +7,7 @@ import socket
 import sys
 import pickle
 import tkinter
+import math
 from transaction import Transaction
 from UTXO import UTXO
 from multiprocessing import Process
