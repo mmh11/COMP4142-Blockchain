@@ -458,13 +458,13 @@ class Blockchain:
       if tran.type == "Output":
         utxo = UTXO(txid, block.index, tran.address, tran.signature, tran.amounts)
         self.UTXO_list.append(utxo)
-        insert_collection_transactionPool([{
-          "txID":utxo.txID,
-          "txIndex":utxo.txIndex,
-          "address":utxo.address,
-          "signature":utxo.signature,
-          "amount":utxo.amount,
-        }])
+        # insert_collection_transactionPool([{
+        #   "txID":utxo.txID,
+        #   "txIndex":utxo.txIndex,
+        #   "address":utxo.address,
+        #   "signature":utxo.signature,
+        #   "amount":utxo.amount,
+        # }])
 
       elif tran.type == "Input":
         remove = []
@@ -483,7 +483,7 @@ class Blockchain:
         # delete the spent utxo
         for utxo in remove:
           self.UTXO_list.remove(utxo)
-          remove_from_transationPool({utxo})
+          # remove_from_transationPool({utxo})
     
     return True
 
