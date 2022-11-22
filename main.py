@@ -11,7 +11,7 @@ import math
 from transaction import Transaction
 from UTXO import UTXO
 from multiprocessing import Process
-from mongoDB import get_latestblock_fromDB,insert_collection_RawData, find_document, get_latestblock_fromDB, count_rawdata, insert_collection_transactionPool, remove_from_transationPool
+from mongoDB import get_latestblock_fromDB,insert_collection_RawData, find_document, get_latestblock_fromDB, count_rawdata, insert_collection_transactionPool, remove_from_transationPool, count_transactionPool
 
 from hashlib import sha256
 import queue
@@ -458,13 +458,13 @@ class Blockchain:
       if tran.type == "Output":
         utxo = UTXO(txid, block.index, tran.address, tran.signature, tran.amounts)
         self.UTXO_list.append(utxo)
-        # insert_collection_transactionPool([{
-        #   "txID":utxo.txID,
-        #   "txIndex":utxo.txIndex,
-        #   "address":utxo.address,
-        #   "signature":utxo.signature,
-        #   "amount":utxo.amount,
-        # }])
+        insert_collection_transactionPool({
+          "txID":utxo.txID,
+          "txIndex":utxo.txIndex,
+          "address":utxo.address,
+          "signature":utxo.signature,
+          "amount":utxo.amount,
+        })
 
       elif tran.type == "Input":
         remove = []
@@ -483,7 +483,13 @@ class Blockchain:
         # delete the spent utxo
         for utxo in remove:
           self.UTXO_list.remove(utxo)
-          # remove_from_transationPool({utxo})
+          remove_from_transationPool({
+            "txID":utxo.txID,
+            "txIndex":utxo.txIndex,
+            "address":utxo.address,
+            "signature":utxo.signature,
+            "amount":utxo.amount,
+          })
     
     return True
 
@@ -632,6 +638,7 @@ class Blockchain:
     if len(sys.argv) < 3:
       self.create_genesis_block()
       self.get_chain_data()
+      self.get_utxoList_data()
   
   def run_miningBlock(self):
     
@@ -642,7 +649,23 @@ class Blockchain:
       if isReceiveBlock == False:
         self.pow_mine(my_address)
       
+  def get_utxoList_data(self):
+    # Update/Get utxoList data from mongo DB
+    get_utxoList_index = 1
+    print(f"[*] Need to load {count_transactionPool()} blocks.")
+    while(get_utxoList_index < count_rawdata()):
+      
+      print(f"[*] Loading utxo {get_utxoList_index}")
 
+      single_utxo = UTXO(
+        find_document("txIndex",get_utxoList_index,"transactionPool")["txID"],
+        find_document("txIndex",get_utxoList_index,"transactionPool")["txIndex"],
+        find_document("txIndex",get_utxoList_index,"transactionPool")["address"],
+        find_document("txIndex",get_utxoList_index,"transactionPool")["signature"],
+        find_document("txIndex",get_utxoList_index,"transactionPool")["amount"],)
+      self.UTXO_list.append(single_utxo)
+      get_utxoList_index += 1
+      
   
   def get_chain_data(self):
     # Update/Get chain data from mongo DB

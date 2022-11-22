@@ -34,7 +34,7 @@ def insert_collection_RawData(rawData):
 # Storage - Transactions (UTXO)
 def insert_collection_transactionPool(transactionsData):
     collection_transactionPool = database["transactionPool"] # access to the "transactionPool" collection on mongodb
-    collection_transactionPool.insert_many(transactionsData)
+    collection_transactionPool.insert_one(transactionsData)
 
 # Remove Data - Transactions
 def remove_from_transationPool(transation):
@@ -55,18 +55,23 @@ def check_blockExist(blockIndex):
 
 # Count Data
 def count_rawdata():
-    collection_RawData = database["rawdata"] # access to the "rawdata" collection on mongodb
+    collection_RawData = database["rawdata"]
     return(collection_RawData.count_documents({}))
+def count_transactionPool():
+    collection_transactionPool = database["transactionPool"]
+    return(collection_transactionPool.count_documents({}))
 
 # Find Data
 def find_document(label, value, collection):
     collection_RawData = database[collection] # access to the collection on mongodb
     return(collection_RawData.find_one({label:value}))
 
-# Delete all document in rawdata
-def reset_rawdata():
-    collection_RawData = database["rawdata"] # access to the collection on mongodb
+# Delete all document
+def reset_data():
+    collection_RawData = database["rawdata"]
+    collection_transactionPool = database["transactionPool"]
     collection_RawData.delete_many({})
+    collection_transactionPool.delete_many({})
 # Examples of inserting new data to collections
 
 # Scheme for the "rawdata" collection
@@ -116,7 +121,7 @@ rawData_validator = {
 transactionPool_validator = {
     "$jsonSchema": {
         "bsonType": "object",
-        "required": [ "txID", "txIndex", "address", "amount"],
+        "required": [ "txID", "txIndex", "amount"],
         "properties": {
             "txID": {
                 "bsonType": "string",
@@ -128,15 +133,15 @@ transactionPool_validator = {
             },
             "address": {
                 "bsonType": "string",
-                "description": "address must be a string and it is required"
+                "description": "address must be a string"
             },
             "signature": {
                 "bsonType": "string",
                 "description": "signature must be a string"
             },
             "amount": {
-                "bsonType": "string",
-                "description": "amount must be a string and it is required"
+                "bsonType": "int",
+                "description": "amount must be an integer and it is required"
             },
         }
     }
@@ -145,4 +150,4 @@ transactionPool_validator = {
 if __name__ == "__main__":
     database.command("collMod", "rawdata", validator=rawData_validator)
     database.command("collMod", "transactionPool", validator=transactionPool_validator)
-    # reset_rawdata()
+    # reset_data()
