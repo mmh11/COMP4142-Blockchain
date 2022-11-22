@@ -621,7 +621,7 @@ class Blockchain:
       single_block_data.nonce = find_document("index",get_block_index,"rawdata")["nonce"]
       # Update/Get every transation in that block
       for downloading_transation in find_document("index",get_block_index,"rawdata")["transaction"]:
-        transation_record = Transaction(downloading_transation["type"], downloading_transation["txID"], downloading_transation["address"], downloading_transation["amounts"], downloading_transation["signature"])
+        transation_record = Transaction(downloading_transation["type"], downloading_transation["txID"], downloading_transation["txIndex"], downloading_transation["address"], downloading_transation["amounts"], downloading_transation["signature"])
         single_block_data.add_transaction(transation_record)
       single_block_data.merkle_root = find_document("index",get_block_index,"rawdata")["merkle_root"]
       # Update that block and add back into local chain
