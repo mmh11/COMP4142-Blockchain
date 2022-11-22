@@ -36,6 +36,11 @@ def insert_collection_transactionPool(transactionsData):
     collection_transactionPool = database["transactionPool"] # access to the "transactionPool" collection on mongodb
     collection_transactionPool.insert_many(transactionsData)
 
+# Remove Data - Transactions
+def remove_from_transationPool(transation):
+    collection_transactionPool = database["transactionPool"] # access to the "transactionPool" collection on mongodb
+    collection_transactionPool.delete_one(transation)
+
 # Get Data - Lastest block
 def get_latestblock_fromDB():
     collection_RawData = database["rawdata"] # access to the "rawdata" collection on mongodb
