@@ -14,6 +14,9 @@ from multiprocessing import Process
 from mongoDB import get_latestblock_fromDB,insert_collection_RawData, find_document, get_latestblock_fromDB, count_rawdata
 
 from hashlib import sha256
+import queue
+
+
 """
 Reference List:
 [1] https://www.youtube.com/watch?v=zVqczFZr124
@@ -22,7 +25,12 @@ Reference List:
 """
 client = ''
 isReceiveBlock = False
-isMineBlock = True
+bc_process = ''
+q = queue.Queue()
+my_address = ""
+
+global stop_threads
+stop_threads = False
 
 # Blockchain prototype - The basic content
 
@@ -130,6 +138,8 @@ class Blockchain:
     self.pending_transactions = []
     self.UTXO_list = []       
     
+    self.isMineBlock = True
+
     # For P2P connection
     self.socket_host = "127.0.0.1"
     self.socket_port = int(sys.argv[1])
@@ -608,22 +618,32 @@ class Blockchain:
   
   def start(self):
     address, private = self.generate_address()
+    my_address = address
     print(f"Miner address: {address}")
     print(f"Miner private: {private}")
     if len(sys.argv) < 3:
       self.create_genesis_block()
       self.get_chain_data()
-    while(True):
+  
+  def run_miningBlock(self):
+    
+    for num in range(20):
       # Update chain if it is not synchronized
       if (self.lastest_block().current_hash != get_latestblock_fromDB()["current_hash"]):
           self.get_chain_data()
       if isReceiveBlock == False:
-        self.pow_mine(address)
+        self.pow_mine(my_address)
+      
 
+  
   def get_chain_data(self):
     # Update/Get chain data from mongo DB
     get_block_index = 1
+    print(f"[*] Need to load {count_rawdata()} blocks.")
     while(get_block_index < count_rawdata()):
+      
+      print(f"[*] Loading Block {get_block_index}")
+
       single_block_data = Block(find_document("index",get_block_index,"rawdata")["index"], find_document("index",get_block_index,"rawdata")["difficulty"])
       single_block_data.index = find_document("index",get_block_index,"rawdata")["index"]
       single_block_data.timestamp = find_document("index",get_block_index,"rawdata")["timestamp"]
@@ -639,6 +659,7 @@ class Blockchain:
       # Update that block and add back into local chain
       self.chain.append(single_block_data)
       get_block_index += 1
+      
 
 def handle_receive():
   while True:
@@ -712,40 +733,38 @@ def user_interface(b):
   Pay_button = tkinter.Button(text='Pay Coin', command=ui_payment)
   canvas1.create_window(350, 200, window=Pay_button)
 
-  def ui_mineblock(isMineBlock):
-    if isMineBlock == True:
+  def ui_mineblock(b, bc_process):
+    print(f" [**] isMineBlock: {b.isMineBlock}")
+    if b.isMineBlock == True:
       print("[*] Start Mining Block...")
-      bc_process = threading.Thread(target=b.start)
-      bc_process.start()
-      isMineBlock = False
-    else:
-      print("[*] Stop Mining Block...")
-      bc_process.join()
-      isMineBlock = True
+      b.run_miningBlock()
+    
   
-  MineBlock_button = tkinter.Button(text='Mine Block', command=ui_mineblock(isMineBlock))
+  MineBlock_button = tkinter.Button(text='Mine Block', command= lambda: ui_mineblock(b, bc_process))
   canvas1.create_window(350, 250, window=MineBlock_button)
-
 
   root.mainloop()
 
         
 if __name__ == "__main__":
   b = Blockchain()
-
+  
+  print("[*] Connecting client...")
   target_host = "127.0.0.1"
   target_port = int(sys.argv[1])
   client = socket.socket(socket.AF_INET, socket.SOCK_STREAM)
   client.connect((target_host, target_port))
 
+  print("[*] Adding receive handler...")
   receive_handler = threading.Thread(target=handle_receive, args=())
   receive_handler.start()
 
-  ui_process = threading.Thread(target=user_interface(b), args=())
-  ui_process.daemon = True
-  ui_process.start()
+  print("[*] Starting Blockchain...")
+  b.start()
 
-
+  print("[*] Loading UI...")
+  user_interface(b)
+  
 
   '''
   b.create_genesis_block()
