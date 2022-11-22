@@ -100,8 +100,18 @@ class Block:
 
 
   def cal_merkle_root(self):
-    ###
-    return True
+    leaves = []
+    for tran in self.transaction:
+      hash_data = ''
+      if tran.type == "Input":
+        hash_data = str(tran.txID) + str(tran.txIndex) + str(tran.signature)
+      else:
+        hash_data = str(tran.address) + str(tran.amounts)
+
+      leaves.append(sha256(hash_data.encode()).hexdigest())
+
+    leaves = padding(leaves)
+    return build_merkle_tree(leaves)
 
 class Blockchain:
 
