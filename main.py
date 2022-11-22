@@ -108,6 +108,9 @@ class Block:
   def add_transaction(self, transaction):
     self.transaction.append(transaction)
 
+  def latest_state(self):
+    ###
+    return
 
   def cal_merkle_root(self):
     leaves = []
