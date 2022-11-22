@@ -652,7 +652,7 @@ class Blockchain:
   def get_utxoList_data(self):
     # Update/Get utxoList data from mongo DB
     get_utxoList_index = 1
-    print(f"[*] Need to load {count_transactionPool()} blocks.")
+    print(f"[*] Need to load {count_transactionPool()} utxo.")
     while(get_utxoList_index < count_rawdata()):
       
       print(f"[*] Loading utxo {get_utxoList_index}")
