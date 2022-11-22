@@ -131,27 +131,27 @@ rawData_validator = {
 transactionPool_validator = {
     "$jsonSchema": {
         "bsonType": "object",
-        "required": [ "sender", "recipient", "amount", "txid", "previous_hash"],
+        "required": [ "txID", "txIndex", "address", "amount"],
         "properties": {
-            "sender": {
+            "txID": {
                 "bsonType": "string",
-                "description": "sender must be a string and it is required"
+                "description": "txID must be a string and it is required"
             },
-            "recipient": {
+            "txIndex": {
+                "bsonType": "int",
+                "description": "txIndex must be an integer and it is required"
+            },
+            "address": {
                 "bsonType": "string",
-                "description": "recipient must be a string and it is required"
+                "description": "address must be a string and it is required"
+            },
+            "signature": {
+                "bsonType": "string",
+                "description": "signature must be a string"
             },
             "amount": {
                 "bsonType": "string",
                 "description": "amount must be a string and it is required"
-            },
-            "txid": {
-                "bsonType": "string",
-                "description": "txid must be a string and it is required"
-            },
-            "previous_hash": {
-                "bsonType": "string",
-                "description": "previous_hash must be a string and it is required"
             },
         }
     }
