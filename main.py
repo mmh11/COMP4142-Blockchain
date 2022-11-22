@@ -22,6 +22,7 @@ Reference List:
 """
 client = ''
 isReceiveBlock = False
+isMineBlock = True
 
 # Blockchain prototype - The basic content
 
@@ -646,6 +647,7 @@ def handle_receive():
         print(f"[*] Message from node: {response}")
 
 def user_interface(b):
+  
   # UI related
   root= tkinter.Tk()
   root.title("Blockchain App")
@@ -710,6 +712,21 @@ def user_interface(b):
   Pay_button = tkinter.Button(text='Pay Coin', command=ui_payment)
   canvas1.create_window(350, 200, window=Pay_button)
 
+  def ui_mineblock(isMineBlock):
+    if isMineBlock == True:
+      print("[*] Start Mining Block...")
+      bc_process = threading.Thread(target=b.start)
+      bc_process.start()
+      isMineBlock = False
+    else:
+      print("[*] Stop Mining Block...")
+      bc_process.join()
+      isMineBlock = True
+  
+  MineBlock_button = tkinter.Button(text='Mine Block', command=ui_mineblock(isMineBlock))
+  canvas1.create_window(350, 250, window=MineBlock_button)
+
+
   root.mainloop()
 
         
@@ -723,9 +740,6 @@ if __name__ == "__main__":
 
   receive_handler = threading.Thread(target=handle_receive, args=())
   receive_handler.start()
-
-  bc_process = threading.Thread(target=b.start)
-  bc_process.start() 
 
   ui_process = threading.Thread(target=user_interface(b), args=())
   ui_process.daemon = True
