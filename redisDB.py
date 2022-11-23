@@ -1,7 +1,6 @@
 import redis
 from redis import StrictRedis, ConnectionPool
 import pickle
-from LatestState import LatestState
 
 """
 For memory storage, a localhost redis database will be used as suggested.
