@@ -11,3 +11,6 @@ try:
     redis = StrictRedis(connection_pool=pool)
 except Exception:
     print("Connection Error: " + Exception)
+
+def redisPush(latestState):
+    redis.rpush("latestState",latestState)

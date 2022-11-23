@@ -3,5 +3,6 @@ class LatestState:
         self.height = height
         self.fullNodeList = []
         self.neighborList = []
+
     def __str__(self):
         return str(self.__class__) + ": " + str(self.__dict__)

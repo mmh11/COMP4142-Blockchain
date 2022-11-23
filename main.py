@@ -10,6 +10,7 @@ import tkinter
 import math
 from transaction import Transaction
 from UTXO import UTXO
+from LatestState import LatestState
 from multiprocessing import Process
 from mongoDB import get_latestblock_fromDB,insert_collection_RawData, find_document, get_latestblock_fromDB, count_rawdata, insert_collection_transactionPool, remove_from_transationPool, count_transactionPool
 

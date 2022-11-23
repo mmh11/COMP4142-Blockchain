@@ -79,7 +79,7 @@ def reset_data():
 rawData_validator = {
     "$jsonSchema": {
         "bsonType": "object",
-        "required": [ "index", "timestamp", "current_hash", "difficulty", "nonce"],
+        "required": [ "index", "timestamp", "previous_hash", "current_hash", "difficulty", "nonce", "transaction", "merkle_root"],
         "properties": {
             "index": {
                 "bsonType": "int",
@@ -122,7 +122,7 @@ rawData_validator = {
 transactionPool_validator = {
     "$jsonSchema": {
         "bsonType": "object",
-        "required": [ "txID", "txIndex", "amount"],
+        "required": [ "txID", "txIndex", "address", "signature", "amount"],
         "properties": {
             "txID": {
                 "bsonType": "string",
