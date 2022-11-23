@@ -568,7 +568,7 @@ class Blockchain:
     return balance
 
   def generate_address(self):
-    public, private = rsa.newkeys(1024)
+    public, private = rsa.newkeys(256)
     public_key_address = str(public.save_pkcs1())
     public_key_address = public_key_address.replace("\\n", '')
     public_key_address = public_key_address.replace(
