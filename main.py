@@ -29,7 +29,6 @@ client = ''
 isReceiveBlock = False
 bc_process = ''
 q = queue.Queue()
-my_address = ""
 
 global stop_threads
 stop_threads = False
@@ -589,7 +588,7 @@ class Blockchain:
       while not(temp == 0):
         if self.UTXO_list[i].address == sender:
           if self.UTXO_list[i].amount >= temp:
-            tran = Transaction("Input", self.UTXO_list[i].txID, self.UTXO_list[i].txIndex, address, temp, '')
+            tran = Transaction("Input", self.UTXO_list[i].txID, self.UTXO_list[i].txIndex, sender, temp, '')
             tran_list.append(tran)
             break
           else:
@@ -643,6 +642,7 @@ class Blockchain:
   
   def start(self):
     address, private = self.generate_address()
+    global my_address
     my_address = address
     print(f"Miner address: {address}")
     print(f"Miner private: {private}")
@@ -762,13 +762,20 @@ def user_interface(b):
       "request": "transaction"
     }
     address = Payment_SenderEntry.get()
-    private_key = Payment_SenderKeyEntry.get()
     receiver = Payment_ReceiverEntry.get()
     amount = Payment_AmountEntry.get()
+
+    private_key = '-----BEGIN RSA PRIVATE KEY-----\n'
+    private_key += Payment_SenderKeyEntry.get()
+    private_key += '\n-----END RSA PRIVATE KEY-----\n'
+
+    print("Request Payment")
+    print(f"Sender:\n{address}\nSender's key:\n{private_key}\nReceiver:\n{receiver}\nAmount: {amount}")
     new_transaction = b.build_transaction(
       address, receiver, int(amount)
     )
-    signature = b.sign_transaction(new_transaction, private_key)
+    print(f"[*] Create new payment transactions: {new_transaction}")
+    signature = b.sign_transaction(new_transaction, private_key.encode('utf-8'))
     message["data"] = new_transaction
     message["signature"] = signature
 
