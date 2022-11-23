@@ -573,6 +573,19 @@ class Blockchain:
       "-----END RSA PUBLIC KEY-----'", '')
     private_key = private.save_pkcs1()
 
+    pri = str(private_key)
+    pri = pri.replace("\\n", '',1)
+    pri = pri[::-1].replace("n\\", '', 2)[::-1]
+    
+    pri = pri.replace(
+      "b'-----BEGIN RSA PRIVATE KEY-----", '')
+    pri = pri.replace(
+      "-----END RSA PRIVATE KEY-----'", '')
+    
+    with open('address.txt','w') as f:
+      f.write("Address: " + public_key_address)
+      f.write("Private key: " + pri)
+
     return public_key_address, private_key
 
   # p2p transaction
