@@ -151,4 +151,4 @@ transactionPool_validator = {
 if __name__ == "__main__":
     database.command("collMod", "rawdata", validator=rawData_validator)
     database.command("collMod", "transactionPool", validator=transactionPool_validator)
-    # reset_data()
+    #reset_data()

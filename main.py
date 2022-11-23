@@ -13,6 +13,7 @@ from UTXO import UTXO
 from LatestState import LatestState
 from multiprocessing import Process
 from mongoDB import get_latestblock_fromDB,insert_collection_RawData, find_document, get_latestblock_fromDB, count_rawdata, insert_collection_transactionPool, remove_from_transationPool, count_transactionPool
+from redisDB import redisPush
 
 from hashlib import sha256
 import queue
@@ -110,7 +111,10 @@ class Block:
     self.transaction.append(transaction)
 
   def latest_state(self):
-    ###
+    new_fullNodeList = []
+    new_neighborList = []
+    new_latest_state = LatestState(self.index, new_fullNodeList, new_neighborList)
+    # redisPush(new_latest_state)
     return
 
   def cal_merkle_root(self):
