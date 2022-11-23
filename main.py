@@ -28,7 +28,6 @@ client = ''
 isReceiveBlock = False
 bc_process = ''
 q = queue.Queue()
-my_address = ""
 
 global stop_threads
 stop_threads = False
@@ -639,6 +638,7 @@ class Blockchain:
   
   def start(self):
     address, private = self.generate_address()
+    global my_address
     my_address = address
     print(f"Miner address: {address}")
     print(f"Miner private: {private}")
