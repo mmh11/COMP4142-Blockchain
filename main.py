@@ -4,6 +4,7 @@ import time
 import rsa
 import threading
 import socket
+import copy
 import sys
 import pickle
 import tkinter
@@ -297,16 +298,19 @@ class Blockchain:
           elif parsed_message["request"] == "transaction":
             print("Start to transaction for client...")
             new_transaction = parsed_message["data"]
-            result, result_message = self.add_transaction(
-              new_transaction,
-              parsed_message["signature"]
-            )
-            response = {
-              "result": result,
-              "result_message": result_message
-            }
-            if result:
-              self.broadcast_transaction(new_transaction)
+            if len(new_transaction) > 0:
+              signatures = parsed_message["signature"]
+              print(f"[*] loading transactions: {new_transaction}")
+              print(f"[*] loading signatures: {signatures}")
+              for i in range(len(new_transaction)):
+                print("[*] broadcasting new message...")
+                result, result_message = self.add_transaction(new_transaction[i], signatures[i])
+                response = {
+                  "result": result,
+                  "result_message": result_message
+                }
+                if result:
+                  self.broadcast_transaction(new_transaction[i-1])
           # 接收到同步區塊的請求
           elif parsed_message["request"] == "clone_blockchain":
             print(f"[*] Receive blockchain clone request by {address}...")
@@ -645,18 +649,23 @@ class Blockchain:
       try:
         rsa.verify(txID.encode('utf-8'), signature, public_key)
         self.pending_transactions.append(transaction)
-        return True
+        return True, "Authorized successfully!"
       except Exception:
         print("Signature not verified!")
+        return False, "RSA Verified wrong!"
         
     else:
       # add Output transaction to pending 
       self.pending_transactions.append(transaction)
+      return True, "Authorized successfully!"
+      
   
   def start(self):
     address, private = self.generate_address()
     global my_address
+    global my_privateKey
     my_address = address
+    my_privateKey = private
     print(f"Miner address: {address}")
     print(f"Miner private: {private}")
     if len(sys.argv) < 3:
@@ -750,23 +759,15 @@ def user_interface(b):
   canvas1.create_window(350, 50, window=GetBal_button)
 
   PaymentLabel = tkinter.Label(root, text='Payment')
-  Payment_SenderLabel = tkinter.Label(root, text='Your address')
-  Payment_SenderKeyLabel = tkinter.Label(root, text='Your Private Key')
   Payment_ReceiverLabel = tkinter.Label(root, text='Receiver address')
   Payment_AmountLabel = tkinter.Label(root, text='Amount')
 
-  Payment_SenderEntry = tkinter.Entry(root)
-  Payment_SenderKeyEntry = tkinter.Entry(root)
   Payment_ReceiverEntry = tkinter.Entry(root)
   Payment_AmountEntry = tkinter.Entry(root)  
 
-  canvas1.create_window(50, 100, window=PaymentLabel)
-  canvas1.create_window(50, 125, window=Payment_SenderLabel)
-  canvas1.create_window(50, 150, window=Payment_SenderKeyLabel)
+  canvas1.create_window(50, 150, window=PaymentLabel)
   canvas1.create_window(50, 175, window=Payment_ReceiverLabel)
   canvas1.create_window(50, 200, window=Payment_AmountLabel)
-  canvas1.create_window(200, 125, window=Payment_SenderEntry)
-  canvas1.create_window(200, 150, window=Payment_SenderKeyEntry)
   canvas1.create_window(200, 175, window=Payment_ReceiverEntry)
   canvas1.create_window(200, 200, window=Payment_AmountEntry) 
 
@@ -774,13 +775,11 @@ def user_interface(b):
     message = {
       "request": "transaction"
     }
-    address = Payment_SenderEntry.get()
+    address = my_address
     receiver = Payment_ReceiverEntry.get()
     amount = Payment_AmountEntry.get()
 
-    private_key = '-----BEGIN RSA PRIVATE KEY-----\n'
-    private_key += Payment_SenderKeyEntry.get()
-    private_key += '\n-----END RSA PRIVATE KEY-----\n'
+    private_key = my_privateKey
 
     print("Request Payment")
     print(f"Sender:\n{address}\nSender's key:\n{private_key}\nReceiver:\n{receiver}\nAmount: {amount}")
@@ -788,9 +787,11 @@ def user_interface(b):
       address, receiver, int(amount)
     )
     print(f"[*] Create new payment transactions: {new_transaction}")
-    signature = b.sign_transaction(new_transaction, private_key.encode('utf-8'))
+    signature = b.sign_transaction(new_transaction, private_key)
     message["data"] = new_transaction
     message["signature"] = signature
+
+    print(f"[**] Created message: {message}")
 
     client.send(pickle.dumps(message))
 
