@@ -3,7 +3,7 @@ from pymongo import MongoClient
 import urllib
 
 """
-For stoage, mongo database will be used as suggested.
+For disk stoage which is synced with other nodes in network, an atlas mongo database will be used to simulate as suggested.
 >pip install pymongo
 
 The Mongo Database account:
@@ -21,6 +21,7 @@ Reference List:
 
 try:
     dbAdmin_password = "@bcdef123456"
+    # may convert to localhost database later
     cluster = MongoClient("mongodb+srv://dbAdmin:" + urllib.parse.quote(dbAdmin_password) + "@atlascluster.g7wziyq.mongodb.net/?retryWrites=true&w=majority&authSource=admin")
     database = cluster["COMP4142-BLOCKCHAIN"] # cluster the name of the database on mongodb
 except Exception:
