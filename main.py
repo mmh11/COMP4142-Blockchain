@@ -149,7 +149,7 @@ class Blockchain:
     self.node_address = {f"{self.socket_host}:{self.socket_port}"}
     self.connection_nodes = {}
     print("len(sys.argv): "+str(len(sys.argv)))
-    if len(sys.argv) == 3:
+    if len(sys.argv) >= 3:
       print("Request cloning blockchain....")
       self.clone_blockchain(sys.argv[2])
       print(f"Node list: {self.node_address}")
@@ -315,6 +315,9 @@ class Blockchain:
             continue
           # 接收到挖掘出的新區塊
           elif parsed_message["request"] == "broadcast_block":
+            if len(sys.argv) == 4:
+              print("[**] Slow mode on: sleeping 3 seconds when receiving blocks...")
+              time.sleep(3)
             print(f"[*] Receive block broadcast by {address}...")
             self.receive_broadcast_block(parsed_message["data"])
             continue
@@ -646,6 +649,9 @@ class Blockchain:
   def run_miningBlock(self):
     
     for num in range(20):
+      if len(sys.argv) == 4:
+        print("[**] Slow mode on: sleeping 3 seconds when mining new block...")
+        time.sleep(3)
       # Update chain if it is not synchronized
       if (self.lastest_block().current_hash != get_latestblock_fromDB()["current_hash"]):
           self.get_chain_data()
