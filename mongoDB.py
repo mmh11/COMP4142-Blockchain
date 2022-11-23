@@ -21,7 +21,7 @@ Reference List:
 
 try:
     dbAdmin_password = "@bcdef123456"
-    # may convert to localhost database later
+    # may convert to localhost database later, the main idea to to simulate a synced local disk
     cluster = MongoClient("mongodb+srv://dbAdmin:" + urllib.parse.quote(dbAdmin_password) + "@atlascluster.g7wziyq.mongodb.net/?retryWrites=true&w=majority&authSource=admin")
     database = cluster["COMP4142-BLOCKCHAIN"] # cluster the name of the database on mongodb
 except Exception:
@@ -92,7 +92,7 @@ rawData_validator = {
             },
             "previous_hash": {
                 "bsonType": "string",
-                "description": "previous_hash must be a string"
+                "description": "previous_hash must be a string and it is required"
             },
             "current_hash": {
                 "bsonType": "string",
@@ -108,11 +108,11 @@ rawData_validator = {
             },
             "transaction": {
                 "bsonType": "array",
-                "description": "transaction must be an array"
+                "description": "transaction must be an array and it is required"
             },
             "merkle_root": {
                 "bsonType": "string",
-                "description": "merkle_root must be a string"
+                "description": "merkle_root must be a string and it is required"
             },
         }
     }
@@ -134,11 +134,11 @@ transactionPool_validator = {
             },
             "address": {
                 "bsonType": "string",
-                "description": "address must be a string"
+                "description": "address must be a string and it is required"
             },
             "signature": {
                 "bsonType": "string",
-                "description": "signature must be a string"
+                "description": "signature must be a string and it is required"
             },
             "amount": {
                 "bsonType": "int",
