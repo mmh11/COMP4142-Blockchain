@@ -4,27 +4,28 @@ import time
 import rsa
 import threading
 import socket
-import copy
 import sys
 import pickle
 import tkinter
 import math
+import queue
 from transaction import Transaction
 from UTXO import UTXO
 from LatestState import LatestState
 from multiprocessing import Process
 from mongoDB import get_latestblock_fromDB,insert_collection_RawData, find_document, get_latestblock_fromDB, count_rawdata, insert_collection_transactionPool, remove_from_transationPool, count_transactionPool
 from redisDB import redisPush
-
 from hashlib import sha256
-import queue
+
 
 
 """
 Reference List:
 [1] https://www.youtube.com/watch?v=zVqczFZr124
 [2] https://www.activestate.com/blog/how-to-build-a-blockchain-in-python/
-[3] https://ithelp.ithome.com.tw/users/20119982/ironman/2255?page=1 <- more comprehensive tutorial, recommend refer this pls.
+[3] https://github.com/lkm543/it_iron_man_2019/blob/master/code/day07.py
+[4] https://github.com/lkm543/it_iron_man_2019/blob/master/code/day06_client.py
+[5] https://github.com/lkm543/it_iron_man_2019/blob/master/code/day06_server.py
 """
 client = ''
 isReceiveBlock = False
@@ -35,8 +36,6 @@ global stop_threads
 stop_threads = False
 
 # Blockchain prototype - The basic content
-
-
 
 class Node:
 
@@ -164,8 +163,8 @@ class Blockchain:
     self.start_socket_server()
 
   def start_socket_server(self):
-    t = threading.Thread(target=self.wait_for_socket_connection)
-    t.start()
+    socket_thread = threading.Thread(target=self.wait_for_socket_connection)
+    socket_thread.start()
 
   def wait_for_socket_connection(self):
     with socket.socket(socket.AF_INET, socket.SOCK_STREAM) as s:
@@ -274,7 +273,6 @@ class Blockchain:
   # receive client request
   def receive_socket_message(self, connection, address):
     with connection:
-      # print(f'Connected by: {address}')
       address_concat = address[0]+":"+str(address[1])
       while True:
         message = b""
@@ -310,8 +308,8 @@ class Blockchain:
                   "result_message": result_message
                 }
                 if result:
-                  self.broadcast_transaction(new_transaction[i-1])
-          # 接收到同步區塊的請求
+                  self.broadcast_transaction(new_transaction[i])
+          # Receive Syncing Blocks Request
           elif parsed_message["request"] == "clone_blockchain":
             print(f"[*] Receive blockchain clone request by {address}...")
             message = {
@@ -321,7 +319,7 @@ class Blockchain:
             print(message)
             connection.sendall(pickle.dumps(message))
             continue
-          # 接收到挖掘出的新區塊
+          # Receive new mined block
           elif parsed_message["request"] == "broadcast_block":
             if len(sys.argv) == 4:
               print("[**] Slow mode on: sleeping 3 seconds when receiving blocks...")
@@ -329,12 +327,12 @@ class Blockchain:
             print(f"[*] Receive block broadcast by {address}...")
             self.receive_broadcast_block(parsed_message["data"])
             continue
-          # 接收到廣播的交易
+          # Receive broadcasted transactions
           elif parsed_message["request"] == "broadcast_transaction":
             print(f"[*] Receive transaction broadcast by {address}...")
             self.pending_transactions.append(parsed_message["data"])
             continue
-          # 接收到新增節點的請求
+          # Receive add transaction request
           elif parsed_message["request"] == "add_node":
             print(f"[*] Receive add_node broadcast by {address}...")
             self.node_address.add(parsed_message["data"])
@@ -564,7 +562,6 @@ class Blockchain:
     for UTXO in self.UTXO_list:
       if UTXO.address == address:
         balance += UTXO.amount
-
     return balance
 
   def generate_address(self):
