@@ -319,11 +319,12 @@ class Blockchain:
             new_transaction = parsed_message["data"]
             if len(new_transaction) > 0:
               signatures = parsed_message["signature"]
+              public_keys = parsed_message["public_key"]
               print(f"[*] loading transactions: {new_transaction}")
               print(f"[*] loading signatures: {signatures}")
               for i in range(len(new_transaction)):
                 print("[*] broadcasting new message...")
-                result, result_message = self.add_transaction(new_transaction[i], signatures[i], my_public)
+                result, result_message = self.add_transaction(new_transaction[i], signatures[i], public_keys[i])
                 response = {
                   "result": result,
                   "result_message": result_message
@@ -768,24 +769,28 @@ def user_interface(b):
 
   PaymentLabel = tkinter.Label(root, text='Payment')
   Payment_SenderAddressLabel = tkinter.Label(root, text="Sender's address")
+  Payment_SenderPublicKeyLabel = tkinter.Label(root, text="Sender's Public key")
   Payment_SenderPrivateKeyLabel = tkinter.Label(root, text="Sender's Private key")
   Payment_ReceiverLabel = tkinter.Label(root, text='Receiver address')
   Payment_AmountLabel = tkinter.Label(root, text='Amount')
 
   Payment_SenderAddressEntry = tkinter.Entry(root)
+  Payment_SenderPublicKeyEntry = tkinter.Entry(root) 
   Payment_SenderPrivateKeyEntry = tkinter.Entry(root)  
   Payment_ReceiverEntry = tkinter.Entry(root)
   Payment_AmountEntry = tkinter.Entry(root)  
 
   canvas1.create_window(50, 100, window=PaymentLabel)
   canvas1.create_window(50, 125, window=Payment_SenderAddressLabel)
-  canvas1.create_window(50, 150, window=Payment_SenderPrivateKeyLabel)
+  canvas1.create_window(50, 150, window=Payment_SenderPublicKeyLabel)
+  canvas1.create_window(50, 175, window=Payment_SenderPrivateKeyLabel)
+  canvas1.create_window(50, 200, window=Payment_ReceiverLabel)
+  canvas1.create_window(50, 225, window=Payment_AmountLabel)
   canvas1.create_window(200, 125, window=Payment_SenderAddressEntry)
-  canvas1.create_window(200, 150, window=Payment_SenderPrivateKeyEntry) 
-  canvas1.create_window(50, 175, window=Payment_ReceiverLabel)
-  canvas1.create_window(50, 200, window=Payment_AmountLabel)
-  canvas1.create_window(200, 175, window=Payment_ReceiverEntry)
-  canvas1.create_window(200, 200, window=Payment_AmountEntry) 
+  canvas1.create_window(200, 150, window=Payment_SenderPublicKeyEntry)
+  canvas1.create_window(200, 175, window=Payment_SenderPrivateKeyEntry) 
+  canvas1.create_window(200, 200, window=Payment_ReceiverEntry)
+  canvas1.create_window(200, 225, window=Payment_AmountEntry) 
 
   def ui_payment():
     message = {
@@ -795,6 +800,7 @@ def user_interface(b):
     receiver = Payment_ReceiverEntry.get()
     amount = Payment_AmountEntry.get()
 
+    public_key = Payment_SenderPublicKeyEntry.get()
     private_key = Payment_SenderPrivateKeyEntry.get()
 
     print("Request Payment")
@@ -806,6 +812,7 @@ def user_interface(b):
     signature = b.sign_transaction(new_transaction, private_key)
     message["data"] = new_transaction
     message["signature"] = signature
+    message["public_key"] = public_key
 
     print(f"[**] Created message: {message}")
 
@@ -813,7 +820,7 @@ def user_interface(b):
 
 
   Pay_button = tkinter.Button(text='Pay Coin', command=ui_payment)
-  canvas1.create_window(350, 200, window=Pay_button)
+  canvas1.create_window(350, 225, window=Pay_button)
 
   def ui_mineblock(b, bc_process):
     print(f" [**] isMineBlock: {b.isMineBlock}")
@@ -823,7 +830,7 @@ def user_interface(b):
     
   
   MineBlock_button = tkinter.Button(text='Mine Block', command= lambda: ui_mineblock(b, bc_process))
-  canvas1.create_window(350, 250, window=MineBlock_button)
+  canvas1.create_window(350, 275, window=MineBlock_button)
 
   root.mainloop()
 
