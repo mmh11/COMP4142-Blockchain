@@ -653,7 +653,7 @@ class Blockchain:
       vk = ecdsa.VerifyingKey.from_string(bytes.fromhex(public_key), curve=ecdsa.SECP256k1)
       txID = str(transaction.txID)
       try:
-        vk.verify(signature, transaction)
+        vk.verify(signature, txID.encode('utf-8'))
         self.pending_transactions.append(transaction)
         return True, "Authorized successfully!"
       except Exception:
