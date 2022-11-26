@@ -14,7 +14,8 @@ from UTXO import UTXO
 from LatestState import LatestState
 from multiprocessing import Process
 from mongoDB import get_latestblock_fromDB,insert_collection_RawData, find_document, get_latestblock_fromDB, count_rawdata, insert_collection_transactionPool, remove_from_transationPool, count_transactionPool
-from redisDB import redisPush
+from redisDB import redisPush, redisGet
+
 from hashlib import sha256
 
 
@@ -26,6 +27,13 @@ Reference List:
 [3] https://github.com/lkm543/it_iron_man_2019/blob/master/code/day07.py
 [4] https://github.com/lkm543/it_iron_man_2019/blob/master/code/day06_client.py
 [5] https://github.com/lkm543/it_iron_man_2019/blob/master/code/day06_server.py
+
+IMPORTANT!!!
+redis must be downloaded and the redis server must be setup before testing any code, or you can just command all code in redisDB.py and function redisPush() in main.py
+Steps:
+1. Open redis-server.exe with default port 6379
+2. Open redis-cli.exe to interact with redis
+3. Type "ping" in redis-cli.exe, and wait for the response "pong", to test the connection with the redis server
 """
 client = ''
 isReceiveBlock = False
@@ -49,9 +57,10 @@ def calculate_hash(value):
   return hashlib.sha256(value.encode('utf-8')).hexdigest()
 
 
-def build_merkle_tree(leaves):
+def build_merkle_tree(leaves, height):
   nodes = []
-
+  neighbors =[]
+  fullnode = []
   for i in leaves:
     nodes.append(Node(i))
 
@@ -70,7 +79,15 @@ def build_merkle_tree(leaves):
       parent.right = node2
       #print(f'parent hash: {parent.hash}\n')
       temp.append(parent)
+      neighbors.append(parent.hash)
     nodes = temp
+
+  for data in nodes:
+    fullnode.append(data.hash)
+  if nodes[0] in neighbors:
+    neighbors.remove(nodes[0])
+  new_latest_state = LatestState(height, fullnode, neighbors)
+  redisPush(new_latest_state) # redis server should be set up first, please refer to redisDB.py
   return nodes[0]
 
 def padding(leaves):
@@ -118,6 +135,7 @@ class Block:
 
   def cal_merkle_root(self):
     leaves = []
+    height = self.index
     for tran in self.transaction:
       hash_data = ''
       if tran.type == "Input":
@@ -128,7 +146,7 @@ class Block:
       leaves.append(sha256(hash_data.encode()).hexdigest())
 
     leaves = padding(leaves)
-    return build_merkle_tree(leaves)
+    return build_merkle_tree(leaves, height)
 
 class Blockchain:
 

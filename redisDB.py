@@ -11,6 +11,13 @@ https://github.com/microsoftarchive/redis/releases?page=1
 
 reference:
 https://stackoverflow.com/questions/15219858/how-to-store-a-complex-object-in-redis-using-redis-py
+
+IMPORTANT!!!
+redis must be downloaded to test the code of redis
+Steps:
+1. Open redis-server.exe with default port 6379
+2. Open redis-cli.exe to interact with redis
+3. Type "ping" in redis-cli.exe, and wait for the response "pong", to test the connection with the redis server
 """
 
 try:
