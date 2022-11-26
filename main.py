@@ -15,7 +15,10 @@ from LatestState import LatestState
 from multiprocessing import Process
 from mongoDB import get_latestblock_fromDB,insert_collection_RawData, find_document, get_latestblock_fromDB, count_rawdata, insert_collection_transactionPool, remove_from_transationPool, count_transactionPool
 from redisDB import redisPush, redisGet
-
+import hashlib
+import base58
+import binascii
+import ecdsa
 from hashlib import sha256
 
 
@@ -316,11 +319,12 @@ class Blockchain:
             new_transaction = parsed_message["data"]
             if len(new_transaction) > 0:
               signatures = parsed_message["signature"]
+              public_keys = parsed_message["public_key"]
               print(f"[*] loading transactions: {new_transaction}")
               print(f"[*] loading signatures: {signatures}")
               for i in range(len(new_transaction)):
                 print("[*] broadcasting new message...")
-                result, result_message = self.add_transaction(new_transaction[i], signatures[i])
+                result, result_message = self.add_transaction(new_transaction[i], signatures[i], public_keys[i])
                 response = {
                   "result": result,
                   "result_message": result_message
@@ -583,29 +587,20 @@ class Blockchain:
     return balance
 
   def generate_address(self):
-    public, private = rsa.newkeys(256)
-    public_key_address = str(public.save_pkcs1())
-    public_key_address = public_key_address.replace("\\n", '')
-    public_key_address = public_key_address.replace(
-      "b'-----BEGIN RSA PUBLIC KEY-----", '')
-    public_key_address = public_key_address.replace(
-      "-----END RSA PUBLIC KEY-----'", '')
-    private_key = private.save_pkcs1()
-
-    pri = str(private_key)
-    pri = pri.replace("\\n", '',1)
-    pri = pri[::-1].replace("n\\", '', 2)[::-1]
+    ecdsa_pri_key = ecdsa.SigningKey.generate(curve=ecdsa.SECP256k1)
+    private_key = ecdsa_pri_key.to_string().hex()
+    ecdsa_pub_key = '04' + ecdsa_pri_key.get_verifying_key().to_string().hex()
+    hash256_ecdsa_pub_key = hashlib.sha256(binascii.unhexlify(ecdsa_pub_key)).hexdigest()
+    ridemp160_hash256 = hashlib.new('ripemd160', binascii.unhexlify(hash256_ecdsa_pub_key))
+    net_byte = '00' + ridemp160_hash256.hexdigest()
+    hash = net_byte
+    for i in range(1,3):
+      hash = hashlib.sha256(binascii.unhexlify(hash)).hexdigest()
+    check = hash[:8]
+    appendcheck = net_byte + check
+    public_key_address = base58.b58encode(binascii.unhexlify(appendcheck)).decode('utf8')
     
-    pri = pri.replace(
-      "b'-----BEGIN RSA PRIVATE KEY-----", '')
-    pri = pri.replace(
-      "-----END RSA PRIVATE KEY-----'", '')
-    
-    with open('address.txt','w') as f:
-      f.write("Address: " + public_key_address)
-      f.write("Private key: " + pri)
-
-    return public_key_address, private_key
+    return public_key_address, private_key, ecdsa_pub_key
 
   # p2p transaction
   def build_transaction(self, sender, receiver, amount):
@@ -647,27 +642,24 @@ class Blockchain:
     return tran_list
   
   def get_sign(self, transaction, private):
-    private_key = rsa.PrivateKey.load_pkcs1(private)
+    private_key = ecdsa.SigningKey.from_string(bytes.fromhex(private), curve=ecdsa.SECP256k1)
     txID = str(transaction.txID)
-    sign = rsa.sign(txID.encode('utf-8'), private_key, 'SHA-256')
+    sign = private_key.sign(txID.encode('utf-8'))
     return sign
 
   # verify and add transaction to pending
-  def add_transaction(self, transaction, signature):
+  def add_transaction(self, transaction, signature, public_key):
     if transaction.type == "Input":
       # add Input transaction to pending
-      public = '-----BEGIN RSA PUBLIC KEY-----\n'
-      public += transaction.address
-      public += '\n-----END RSA PUBLIC KEY-----\n'
-      public_key = rsa.PublicKey.load_pkcs1(public.encode('utf-8'))
+      vk = ecdsa.VerifyingKey.from_string(bytes.fromhex(public_key), curve=ecdsa.SECP256k1)
       txID = str(transaction.txID)
       try:
-        rsa.verify(txID.encode('utf-8'), signature, public_key)
+        vk.verify(signature, txID.encode('utf-8'))
         self.pending_transactions.append(transaction)
         return True, "Authorized successfully!"
       except Exception:
         print("Signature not verified!")
-        return False, "RSA Verified wrong!"
+        return False, "Verified wrong!"
         
     else:
       # add Output transaction to pending 
@@ -676,12 +668,15 @@ class Blockchain:
       
   
   def start(self):
-    address, private = self.generate_address()
+    address, private, public = self.generate_address()
     global my_address
     global my_privateKey
+    global my_public
     my_address = address
     my_privateKey = private
+    my_public = public
     print(f"Miner address: {address}")
+    print(f"Miner public: {public}")
     print(f"Miner private: {private}")
     if len(sys.argv) < 3:
       self.create_genesis_block()
@@ -774,27 +769,40 @@ def user_interface(b):
   canvas1.create_window(350, 50, window=GetBal_button)
 
   PaymentLabel = tkinter.Label(root, text='Payment')
+  Payment_SenderAddressLabel = tkinter.Label(root, text="Sender's address")
+  Payment_SenderPublicKeyLabel = tkinter.Label(root, text="Sender's Public key")
+  Payment_SenderPrivateKeyLabel = tkinter.Label(root, text="Sender's Private key")
   Payment_ReceiverLabel = tkinter.Label(root, text='Receiver address')
   Payment_AmountLabel = tkinter.Label(root, text='Amount')
 
+  Payment_SenderAddressEntry = tkinter.Entry(root)
+  Payment_SenderPublicKeyEntry = tkinter.Entry(root) 
+  Payment_SenderPrivateKeyEntry = tkinter.Entry(root)  
   Payment_ReceiverEntry = tkinter.Entry(root)
   Payment_AmountEntry = tkinter.Entry(root)  
 
-  canvas1.create_window(50, 150, window=PaymentLabel)
-  canvas1.create_window(50, 175, window=Payment_ReceiverLabel)
-  canvas1.create_window(50, 200, window=Payment_AmountLabel)
-  canvas1.create_window(200, 175, window=Payment_ReceiverEntry)
-  canvas1.create_window(200, 200, window=Payment_AmountEntry) 
+  canvas1.create_window(50, 100, window=PaymentLabel)
+  canvas1.create_window(50, 125, window=Payment_SenderAddressLabel)
+  canvas1.create_window(50, 150, window=Payment_SenderPublicKeyLabel)
+  canvas1.create_window(50, 175, window=Payment_SenderPrivateKeyLabel)
+  canvas1.create_window(50, 200, window=Payment_ReceiverLabel)
+  canvas1.create_window(50, 225, window=Payment_AmountLabel)
+  canvas1.create_window(200, 125, window=Payment_SenderAddressEntry)
+  canvas1.create_window(200, 150, window=Payment_SenderPublicKeyEntry)
+  canvas1.create_window(200, 175, window=Payment_SenderPrivateKeyEntry) 
+  canvas1.create_window(200, 200, window=Payment_ReceiverEntry)
+  canvas1.create_window(200, 225, window=Payment_AmountEntry) 
 
   def ui_payment():
     message = {
       "request": "transaction"
     }
-    address = my_address
+    address = Payment_SenderAddressEntry.get()
     receiver = Payment_ReceiverEntry.get()
     amount = Payment_AmountEntry.get()
 
-    private_key = my_privateKey
+    public_key = Payment_SenderPublicKeyEntry.get()
+    private_key = Payment_SenderPrivateKeyEntry.get()
 
     print("Request Payment")
     print(f"Sender:\n{address}\nSender's key:\n{private_key}\nReceiver:\n{receiver}\nAmount: {amount}")
@@ -805,6 +813,7 @@ def user_interface(b):
     signature = b.sign_transaction(new_transaction, private_key)
     message["data"] = new_transaction
     message["signature"] = signature
+    message["public_key"] = public_key
 
     print(f"[**] Created message: {message}")
 
@@ -812,7 +821,7 @@ def user_interface(b):
 
 
   Pay_button = tkinter.Button(text='Pay Coin', command=ui_payment)
-  canvas1.create_window(350, 200, window=Pay_button)
+  canvas1.create_window(350, 225, window=Pay_button)
 
   def ui_mineblock(b, bc_process):
     print(f" [**] isMineBlock: {b.isMineBlock}")
@@ -822,7 +831,7 @@ def user_interface(b):
     
   
   MineBlock_button = tkinter.Button(text='Mine Block', command= lambda: ui_mineblock(b, bc_process))
-  canvas1.create_window(350, 250, window=MineBlock_button)
+  canvas1.create_window(350, 275, window=MineBlock_button)
 
   root.mainloop()
 
