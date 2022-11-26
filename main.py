@@ -159,7 +159,7 @@ class Blockchain:
     # define Blockchain data
     self.chain = []
     self.adjust_difficulty_blocks = 10
-    self.difficulty = 3
+    self.difficulty = 1
     self.block_time = 30
     self.mining_rewards = 10
     self.block_limitation = 32
@@ -324,7 +324,8 @@ class Blockchain:
               print(f"[*] loading signatures: {signatures}")
               for i in range(len(new_transaction)):
                 print("[*] broadcasting new message...")
-                result, result_message = self.add_transaction(new_transaction[i], signatures[i], public_keys[i])
+
+                result, result_message = self.add_transaction(signatures[i], public_keys)
                 response = {
                   "result": result,
                   "result_message": result_message
@@ -648,13 +649,13 @@ class Blockchain:
     return sign
 
   # verify and add transaction to pending
-  def add_transaction(self, transaction, signature, public_key):
+  def add_transaction(self, transaction, public_key):
     if transaction.type == "Input":
       # add Input transaction to pending
       vk = ecdsa.VerifyingKey.from_string(bytes.fromhex(public_key), curve=ecdsa.SECP256k1)
       txID = str(transaction.txID)
       try:
-        vk.verify(signature, txID.encode('utf-8'))
+        vk.verify(transaction.signature, txID.encode('utf-8'))
         self.pending_transactions.append(transaction)
         return True, "Authorized successfully!"
       except Exception:
@@ -685,7 +686,7 @@ class Blockchain:
   
   def run_miningBlock(self):
     
-    for num in range(20):
+    for num in range(2):
       if len(sys.argv) == 4:
         print("[**] Slow mode on: sleeping 3 seconds when mining new block...")
         time.sleep(3)
