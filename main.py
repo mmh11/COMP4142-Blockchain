@@ -25,8 +25,8 @@ from hashlib import sha256
 
 """
 Reference List:
-[1] https://www.youtube.com/watch?v=zVqczFZr124
-[2] https://www.activestate.com/blog/how-to-build-a-blockchain-in-python/
+[1] https://www.activestate.com/blog/how-to-build-a-blockchain-in-python/
+[2] https://replit.com/@Crumble-Jon/COMP4142-lab1-py
 [3] https://github.com/lkm543/it_iron_man_2019/blob/master/code/day07.py
 [4] https://github.com/lkm543/it_iron_man_2019/blob/master/code/day06_client.py
 [5] https://github.com/lkm543/it_iron_man_2019/blob/master/code/day06_server.py
